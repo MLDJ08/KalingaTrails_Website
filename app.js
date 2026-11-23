@@ -190,6 +190,10 @@
       starterAccountUpdated = true;
     }
   }
+  // Preserve older browser demo data while making Module 9 collection fields available.
+  for (const collection of ["notifications", "posts", "comments", "kudos", "friends"]) {
+    if (!Array.isArray(state[collection])) state[collection] = [];
+  }
   if (starterAccountUpdated) save();
   function save() {
     try {
@@ -1158,52 +1162,94 @@
     </section>`;
   }
   function feedPosts() {
+    const current = me();
     return (
       state.posts
         .slice()
         .reverse()
         .map((p) => {
-          const author = who(p.userId),
-            comments = state.comments.filter((c) => c.postId === p.id),
-            kudos = state.kudos.filter((k) => k.postId === p.id),
-            hasPhoto = !!p.photo;
-          return `<article class="kt-post kt-post-card"><div class="kt-post-header"><div class="kt-post-author"><h3>${esc(author?.name || "Hiker")}</h3><p class="kt-post-meta">Shared with the Kalinga Trails community</p></div>${hasPhoto ? '<span class="tag">Photo post</span>' : '<span class="tag">Post</span>'}</div><p class="kt-post-text">${esc(p.text)}</p>${hasPhoto ? `<img class="kt-post-photo" src="${esc(p.photo)}" alt="Hiking photo shared by ${esc(author?.name || "a hiker")}">` : ""}<div class="kt-actions kt-post-actions">${btn("kudo", `Kudos (${kudos.length})`, p.id)}<span class="kt-muted">${comments.length} comment${comments.length === 1 ? "" : "s"}</span></div><div class="kt-comments">${comments.length ? comments.map((c) => `<p><strong>${esc(who(c.userId)?.name || "Hiker")}:</strong> ${esc(c.text)}</p>`).join("") : '<p class="kt-muted">No comments yet.</p>'}</div>${me() ? `<form class="kt-comment-form" data-post="${p.id}"><input name="text" required maxlength="300" placeholder="Write a comment" aria-label="Comment"><button class="btn btn-secondary" type="submit">Comment</button></form>` : ""}</article>`;
+          const author = who(p.userId);
+          const comments = state.comments.filter((c) => c.postId === p.id);
+          const kudos = state.kudos.filter((k) => k.postId === p.id);
+          const hasPhoto = !!p.photo;
+          const liked = !!current && kudos.some((k) => k.userId === current.id);
+          const mayEdit = current?.role === "hiker" && p.userId === current.id;
+          const mayRemove = !!current && (p.userId === current.id || current.role === "admin");
+          return `<article class="kt-post kt-post-card kt-social-post"><div class="kt-post-header"><div class="kt-post-author"><h3>${esc(author?.name || "Former Hiker")}</h3><p class="kt-post-meta">Shared with the Kalinga Trails community · ${esc(p.date ? fullDate(p.date.slice(0, 10)) : "Recent post")}</p></div>${hasPhoto ? '<span class="tag">Photo post</span>' : '<span class="tag">Post</span>'}</div><p class="kt-post-text">${esc(p.text)}</p>${hasPhoto ? `<img class="kt-post-photo" src="${esc(p.photo)}" alt="Hiking photo shared by ${esc(author?.name || "a hiker")}">` : ""}<div class="kt-actions kt-post-actions">${!current || current.role === "hiker" ? btn("kudo", `${liked ? "✓ Kudos given" : "Give Kudos"} (${kudos.length})`, p.id, `btn ${liked ? "btn-primary" : "btn-secondary"}`) : badge(`Kudos (${kudos.length})`)}<span class="kt-muted">${comments.length} comment${comments.length === 1 ? "" : "s"}</span>${mayEdit ? btn("edit-post", "Edit post", p.id, "btn btn-outline") : ""}${mayRemove ? btn("delete-post", current.role === "admin" && !mayEdit ? "Remove post" : "Delete post", p.id, "btn btn-outline") : ""}</div><div class="kt-comments">${comments.length ? comments.map((c) => {
+            const canRemove = !!current && (c.userId === current.id || current.role === "admin");
+            return `<div class="kt-social-comment"><p><strong>${esc(who(c.userId)?.name || "Former Hiker")}:</strong> ${esc(c.text)}</p>${canRemove ? btn("delete-comment", "Remove", c.id, "btn btn-outline") : ""}</div>`;
+          }).join("") : '<p class="kt-muted">No comments yet.</p>'}</div>${current ? `<form class="kt-comment-form" data-post="${p.id}"><input name="text" required maxlength="300" placeholder="Write a comment" aria-label="Comment"><button class="btn btn-secondary" type="submit">Comment</button></form>` : ""}</article>`;
         })
         .join("") ||
-      empty("No community posts yet. Be the first to share an experience.")
+      empty("No community posts yet. Hikers can share a story from Friends & Activity.")
+    );
+  }
+  function friendshipFor(userId, otherId) {
+    return state.friends.find(
+      (f) =>
+        (f.from === userId && f.to === otherId) ||
+        (f.to === userId && f.from === otherId),
     );
   }
   function communityPane(u) {
+    const pending = state.friends.filter((f) => f.to === u.id && f.status === "pending");
+    const sent = state.friends.filter((f) => f.from === u.id && f.status === "pending");
+    const friends = state.friends.filter(
+      (f) => f.status === "accepted" && (f.to === u.id || f.from === u.id),
+    );
+    const users = state.users.filter((x) => x.role === "hiker" && x.id !== u.id);
     return panel(
       "Friends & Activity",
-      `<h3>Friend requests</h3><div class="kt-items">${
-        state.friends
-          .filter((f) => f.to === u.id && f.status === "pending")
-          .map(
-            (f) =>
-              `<div class="kt-item"><strong>${esc(who(f.from)?.name)}</strong>${btn("friend-accept", "Accept", f.id)}</div>`,
-          )
-          .join("") || empty("No pending requests.")
-      }</div><h3>Find hikers</h3><div class="kt-items">${
-        state.users
-          .filter((x) => x.role === "hiker" && x.id !== u.id)
-          .map((x) => {
-            const f = state.friends.find(
-              (f) =>
-                (f.from === u.id && f.to === x.id) ||
-                (f.to === u.id && f.from === x.id),
-            );
-            return `<div class="kt-item"><strong>${esc(x.name)}</strong>${f ? badge(f.status === "accepted" ? "Friends" : "Request pending") : btn("friend-request", "Add Friend", x.id)}</div>`;
-          })
-          .join("") || empty("No other hikers registered in this browser.")
-      }</div><h3>Share a hiking experience</h3><p class="kt-muted">Community posts are personal stories; they do not update official hiking history.</p><form id="post-form"><label class="kt-field">Your post<textarea name="text" required maxlength="600" rows="3"></textarea></label><label class="kt-field">Photo (optional, 350 KB maximum)<input name="photo" type="file" accept="image/jpeg,image/png,image/webp"></label><button type="submit" class="btn btn-primary">Share Post</button></form><h3>Recent activity</h3><div id="kt-posts">${feedPosts()}</div>`,
+      `<p class="kt-muted">Connect with other Hikers, share trail stories, and celebrate experiences. Posts and kudos do not change official hiking records.</p>
+      ${stats([["Friends", friends.length], ["Received requests", pending.length], ["Sent requests", sent.length], ["My posts", state.posts.filter((p) => p.userId === u.id).length]])}
+      <div class="kt-social-section"><h3>Received friend requests</h3><div class="kt-items">${pending.map((f) => `<div class="kt-item"><strong>${esc(who(f.from)?.name || "Hiker")}</strong><div class="kt-actions">${btn("friend-accept", "Accept", f.id, "btn btn-primary")}${btn("friend-decline", "Decline", f.id)}</div></div>`).join("") || empty("No pending friend requests.")}</div></div>
+      <div class="kt-social-section"><h3>Sent requests</h3><div class="kt-items">${sent.map((f) => `<div class="kt-item"><strong>${esc(who(f.to)?.name || "Hiker")}</strong><div class="kt-actions">${badge("Pending")}${btn("friend-withdraw", "Cancel request", f.id)}</div></div>`).join("") || empty("No outgoing requests.")}</div></div>
+      <div class="kt-social-section"><h3>My friends</h3><div class="kt-items">${friends.map((f) => `<div class="kt-item"><strong>${esc(who(f.from === u.id ? f.to : f.from)?.name || "Hiker")}</strong>${btn("friend-remove", "Remove friend", f.id)}</div>`).join("") || empty("No friends yet. Find hikers below.")}</div></div>
+      <div class="kt-social-section"><h3>Find hikers</h3><div class="kt-items">${users.map((x) => {
+        const f = friendshipFor(u.id, x.id);
+        const status = f?.status === "accepted" ? "Friends" : f?.to === u.id ? "Respond above" : f ? "Request sent" : "";
+        return `<div class="kt-item"><strong>${esc(x.name)}</strong>${f ? badge(status) : btn("friend-request", "Add Friend", x.id, "btn btn-secondary")}</div>`;
+      }).join("") || empty("No other hikers registered in this browser.")}</div></div>
+      <div class="kt-social-section"><h3>Share a hiking experience</h3><form id="post-form"><label class="kt-field">Your post<textarea name="text" required maxlength="600" rows="3" placeholder="Tell the community about your hiking experience"></textarea></label><label class="kt-field">Photo (optional, 350 KB maximum)<input name="photo" type="file" accept="image/jpeg,image/png,image/webp"></label><button type="submit" class="btn btn-primary">Share Post</button></form></div>
+      <div class="kt-social-section"><h3>Community activity</h3><div id="kt-posts">${feedPosts()}</div></div>`,
+    );
+  }
+  function addComment(postId, message) {
+    const current = me();
+    const post = state.posts.find((p) => p.id === Number(postId));
+    const text = String(message || "").trim();
+    if (!current || !post || !text || text.length > 300) return false;
+    state.comments.push({
+      id: next(),
+      userId: current.id,
+      postId: post.id,
+      text,
+      date: new Date().toISOString(),
+    });
+    if (post.userId !== current.id)
+      notice(post.userId, `${current.name} commented on your community post.`);
+    state.users.filter((user) => user.role === "admin" && user.id !== current.id).forEach((user) =>
+      notice(user.id, `${current.name} commented on a community post.`),
+    );
+    save();
+    return true;
+  }
+  function adminCommunityPane() {
+    const pending = state.friends.filter((f) => f.status === "pending");
+    const accepted = state.friends.filter((f) => f.status === "accepted");
+    return panel(
+      "Community Management",
+      `<p class="kt-muted">Review community posts, comments, kudos, and friend-request activity. Administrators can remove posts or comments but cannot accept or decline requests for Hikers.</p>
+      ${stats([["Posts", state.posts.length], ["Comments", state.comments.length], ["Kudos", state.kudos.length], ["Pending requests", pending.length]])}
+      <div class="kt-social-section"><h3>Friendship activity</h3><p class="kt-muted">${accepted.length} accepted friendship${accepted.length === 1 ? "" : "s"} · ${pending.length} pending request${pending.length === 1 ? "" : "s"}</p><div class="kt-items">${pending.slice().reverse().slice(0, 10).map((f) => `<div class="kt-item"><span>${esc(who(f.from)?.name || "Hiker")} → ${esc(who(f.to)?.name || "Hiker")}</span>${badge("Pending")}</div>`).join("") || empty("No pending friend requests.")}</div></div>
+      <div class="kt-social-section"><h3>Moderate community posts</h3><p class="kt-muted">Use Remove post or Remove on a comment when moderation is necessary. Removing a post also removes its comments and kudos.</p><div class="kt-post-list">${feedPosts()}</div></div>`,
     );
   }
   function notificationsPane(u) {
     const items = state.notifications.filter((n) => n.userId === u.id);
     const unread = items.filter((n) => !n.read).length;
     return `<section class="kt-panel kt-lz-notifications-panel">
-      <div class="kt-lz-panel-top d-flex flex-wrap justify-content-between align-items-center gap-3"><div><p class="kt-lz-overline">Stay in the loop</p><h2>Notifications</h2><p class="kt-muted">${unread ? `${unread} unread update${unread === 1 ? "" : "s"}` : "You're all caught up"}</p></div>${unread ? btn("read-all-notifications", "Mark all as read", "", "btn btn-outline") : ""}</div>
+      <div class="kt-lz-panel-top d-flex flex-wrap align-items-center justify-content-between gap-3"><div><p class="kt-lz-overline">Stay in the loop</p><h2>Notifications</h2><p class="kt-muted">${unread ? `${unread} unread update${unread === 1 ? "" : "s"}` : "You're all caught up"}</p></div><div class="kt-actions">${unread ? btn("read-all-notifications", "Mark all as read", "", "btn btn-outline") : ""}${items.some((n) => n.read) ? btn("clear-read-notifications", "Clear read", "", "btn btn-outline") : ""}</div></div>
       <div class="kt-lz-notification-list">${items.length ? items.map((n) => `<article class="kt-lz-notification ${!n.read ? "is-unread" : ""}"><span class="kt-lz-notification-dot" aria-hidden="true"></span><div><p>${esc(n.message)}</p><small class="kt-muted">${esc(fullDate(n.date.slice(0, 10)))}</small></div>${!n.read ? btn("read-notification", "Mark read", n.id, "btn btn-secondary") : '<span class="kt-lz-small-label">Read</span>'}</article>`).join("") : `<div class="kt-lz-no-bookings"><h3>All clear</h3><p>Your booking updates and community alerts will appear here.</p></div>`}</div>
     </section>`;
   }
@@ -1438,6 +1484,7 @@
       .filter((b) => b.status === "confirmed")
       .flatMap((b) => b.participants);
     if (tab === "notifications") return notificationsPane(u);
+    if (tab === "community") return adminCommunityPane();
     if (tab === "bookings")
       return panel(
         "Manage Bookings",
@@ -1587,6 +1634,8 @@
         `<a class="kt-lz-upcoming-card" href="dashboard.html?tab=bookings"><div><span class="kt-lz-small-label">${esc(fullDate(hike(b.hikeId)?.date))}</span><h4>${esc(hikeTitle(hike(b.hikeId)))}</h4><p>${esc(who(b.userId)?.name || "Hiker")} · Booking #${b.id}</p></div><span class="kt-lz-status kt-lz-status-${esc(b.status)}">${esc(b.status === "pending" ? "Pending Approval" : b.status.charAt(0).toUpperCase() + b.status.slice(1))}</span></a>`
       ).join("")}</div>` : `<div class="kt-lz-empty-overview"><span aria-hidden="true">⛰</span><div><h4>No booking requests yet</h4><p>New Hiker bookings will appear here for review.</p></div></div>`}
       <div class="kt-actions kt-lz-dashboard-actions"><a href="dashboard.html?tab=bookings" class="btn btn-primary">Review Bookings</a><a href="dashboard.html?tab=reports" class="btn btn-secondary">View Reports</a></div>
+      <div class="kt-lz-upcoming-head kt-social-admin-overview"><h3>Community activity</h3><a href="dashboard.html?tab=community">Manage community →</a></div>
+      ${stats([["Community posts", state.posts.length], ["Comments", state.comments.length], ["Kudos", state.kudos.length], ["Pending friend requests", state.friends.filter((f) => f.status === "pending").length]])}
       <div class="kt-lz-upcoming-head kt-lz-inquiry-heading"><h3>Contact inquiries</h3></div>
       ${state.inquiries.map((i) => `<div class="kt-item"><div><strong>${esc(i.name)} · ${esc(i.topic)}</strong><p>${esc(i.message)}</p><small>${esc(i.email)}</small></div>${btn("delete-inquiry", "Archive", i.id)}</div>`).join("") || empty("No inquiries received in this browser.")}
     </section>`;
@@ -1629,6 +1678,7 @@
       ["account", "Account Settings"],
       ["achievements", "Manage Achievements"],
       ["reports", "Reports"],
+      ["community", "Community Management"],
       ["notifications", "Notifications"],
       ["content", "Website Content"],
     ],
@@ -1761,15 +1811,21 @@
       }),
     );
     on("post-form", (f, v) => {
+      const current = me();
+      if (current?.role !== "hiker") return toast("Only Hikers can share posts.", true);
+      if (!v.text.trim()) return toast("Write something before sharing.", true);
       const file = $("[name=photo]", f).files[0];
       const publish = (photo) => {
         state.posts.push({
           id: next(),
-          userId: me().id,
-          text: v.text.trim(),
+          userId: current.id,
+          text: v.text.trim().slice(0, 600),
           photo,
           date: new Date().toISOString(),
         });
+        state.users.filter((x) => x.role === "admin").forEach((x) =>
+          notice(x.id, `${current.name} shared a community post.`),
+        );
         save();
         toast("Post shared locally.");
         renderDashboard();
@@ -1781,14 +1837,8 @@
       f.addEventListener("submit", (e) => {
         e.preventDefault();
         const v = formValues(f);
-        if (!v.text.trim()) return;
-        state.comments.push({
-          id: next(),
-          userId: me().id,
-          postId: Number(f.dataset.post),
-          text: v.text.trim(),
-        });
-        save();
+        if (!addComment(f.dataset.post, v.text))
+          return toast("Enter a comment of up to 300 characters.", true);
         if ($("#dashboard-app")) renderDashboard();
         else renderCommunity();
       }),
@@ -2131,31 +2181,68 @@
     }
     if (name === "friend-request" && u.role === "hiker") {
       const other = who(Number(id));
-      if (
-        !other ||
-        other.role !== "hiker" ||
-        other.id === u.id ||
-        state.friends.some(
-          (f) =>
-            (f.from === u.id && f.to === other.id) ||
-            (f.to === u.id && f.from === other.id),
-        )
-      )
-        return;
-      state.friends.push({
-        id: next(),
-        from: u.id,
-        to: other.id,
-        status: "pending",
-      });
+      if (!other || other.role !== "hiker" || other.id === u.id || friendshipFor(u.id, other.id))
+        return toast("This friend request cannot be sent.", true);
+      state.friends.push({ id: next(), from: u.id, to: other.id, status: "pending" });
       notice(other.id, `${u.name} sent a friend request.`);
+      toast("Friend request sent.");
     }
-    if (name === "friend-accept") {
-      const f = state.friends.find((x) => x.id === Number(id) && x.to === u.id);
-      if (f) {
+    if (name === "friend-accept" || name === "friend-decline") {
+      if (u.role !== "hiker") return toast("Only Hikers can respond to friend requests.", true);
+      const f = state.friends.find((x) => x.id === Number(id) && x.to === u.id && x.status === "pending");
+      if (!f) return toast("Friend request unavailable.", true);
+      if (name === "friend-accept") {
         f.status = "accepted";
         notice(f.from, `${u.name} accepted your friend request.`);
+        toast("Friend request accepted.");
+      } else {
+        state.friends = state.friends.filter((x) => x.id !== f.id);
+        toast("Friend request declined.");
       }
+    }
+    if (name === "friend-withdraw" || name === "friend-remove") {
+      if (u.role !== "hiker") return toast("Only Hikers can manage friendships.", true);
+      const f = state.friends.find((x) => x.id === Number(id) && (x.from === u.id || x.to === u.id));
+      if (!f || (name === "friend-withdraw" && (f.from !== u.id || f.status !== "pending")) ||
+          (name === "friend-remove" && f.status !== "accepted"))
+        return toast("Friendship action unavailable.", true);
+      if (name === "friend-remove" && !confirm("Remove this friend?")) return;
+      state.friends = state.friends.filter((x) => x.id !== f.id);
+      toast(name === "friend-remove" ? "Friend removed." : "Friend request cancelled.");
+    }
+    if (name === "edit-post") {
+      const post = state.posts.find((p) => p.id === Number(id));
+      if (!post || u.role !== "hiker" || post.userId !== u.id)
+        return toast("You may edit only your own posts.", true);
+      const revised = prompt("Edit your post (600 characters maximum):", post.text);
+      if (revised === null) return;
+      if (!revised.trim() || revised.trim().length > 600)
+        return toast("Post must contain 1 to 600 characters.", true);
+      post.text = revised.trim();
+      post.edited = new Date().toISOString();
+      toast("Post updated.");
+    }
+    if (name === "delete-post") {
+      const post = state.posts.find((p) => p.id === Number(id));
+      if (!post || (post.userId !== u.id && u.role !== "admin"))
+        return toast("You cannot remove this post.", true);
+      if (!confirm("Remove this post and all of its comments and kudos?")) return;
+      state.posts = state.posts.filter((p) => p.id !== post.id);
+      state.comments = state.comments.filter((c) => c.postId !== post.id);
+      state.kudos = state.kudos.filter((k) => k.postId !== post.id);
+      if (u.role === "admin" && post.userId !== u.id)
+        notice(post.userId, "An administrator removed one of your community posts.");
+      toast("Post removed.");
+    }
+    if (name === "delete-comment") {
+      const comment = state.comments.find((c) => c.id === Number(id));
+      if (!comment || (comment.userId !== u.id && u.role !== "admin"))
+        return toast("You cannot remove this comment.", true);
+      if (!confirm("Remove this comment?")) return;
+      state.comments = state.comments.filter((c) => c.id !== comment.id);
+      if (u.role === "admin" && comment.userId !== u.id)
+        notice(comment.userId, "An administrator removed one of your community comments.");
+      toast("Comment removed.");
     }
     if (name === "kudo") {
       if (u.role !== "hiker") return toast("Only hikers can give kudos.", true);
@@ -2170,7 +2257,7 @@
           notice(p.userId, `${u.name} gave your post kudos.`);
       } else state.kudos.splice(ix, 1);
     }
-    if (name === "read-all-notifications" && u.role === "hiker") {
+    if (name === "read-all-notifications") {
       state.notifications
         .filter((entry) => entry.userId === u.id)
         .forEach((entry) => {
@@ -2186,6 +2273,10 @@
         (n) => n.id === Number(id) && n.userId === u.id,
       );
       if (n) n.read = true;
+    }
+    if (name === "clear-read-notifications") {
+      state.notifications = state.notifications.filter((n) => n.userId !== u.id || !n.read);
+      toast("Read notifications cleared.");
     }
     if (u.role === "admin") {
       if (name === "toggle-hike") {
@@ -2426,14 +2517,8 @@
         e.preventDefault();
         if (!me()) return (location.href = "auth.html");
         const v = formValues(f);
-        if (!v.text.trim()) return;
-        state.comments.push({
-          id: next(),
-          userId: me().id,
-          postId: Number(f.dataset.post),
-          text: v.text.trim(),
-        });
-        save();
+        if (!addComment(f.dataset.post, v.text))
+          return toast("Enter a comment of up to 300 characters.", true);
         renderCommunity();
       }),
     );
