@@ -1,48 +1,396 @@
+
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Your Dashboard | Kalinga Trails</title>
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.9/dist/css/bootstrap.min.css"
-      data-lz-bootstrap
-      media="not all"
-      integrity="sha384-yEPZ7jP9S0QKiUQ0m3jjsO4ProIW7wvR9gXkI7JOGa2XVsw53Yke2bsdkBbjmmiX"
-      crossorigin="anonymous"
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+    name="description"
+    content="Manage your Kalinga Trails hiking activities, assigned hikes, attendance, and completion records."
     />
+  <title>Your Dashboard | Kalinga Trails</title>
+
+    <!-- Existing Bootstrap reference remains disabled -->
+    <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.9/dist/css/bootstrap.min.css"
+    data-lz-bootstrap
+    media="not all"
+    integrity="sha384-yEPZ7jP9S0QKiUQ0m3jjsO4ProIW7wvR9gXkI7JOGa2XVsw53Yke2bsdkBbjmmiX"
+    crossorigin="anonymous"
+    />
+
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="enhancements.css" />
-  </head>
-  <body class="kt-dashboard-page kt-lz-page kt-lz-dashboard-page">
-    <header class="site-header">
-      <nav class="navbar container">
-        <a class="logo" href="index.html" aria-label="Kalinga Trails Home">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="logo-svg"
-            viewBox="240 420 780 430"
-            role="img"
-            aria-label="Kalinga Trails"
-          >
-            <path
+
+    <!-- Dashboard design only. No JavaScript functionality changed. -->
+    <style>
+      /* Dashboard background and spacing */
+
+      body.kt-dashboard-page {
+        background: #f8f7f3;
+      }
+
+      body.kt-dashboard-page .kt-dashboard-page-section {
+        padding: clamp(24px, 4vw, 55px) 0;
+        min-height: 65vh;
+      }
+
+      /* Dashboard hero */
+
+      body.kt-dashboard-page .kt-dashboard-hero {
+        position: relative;
+        overflow: hidden;
+        background: linear-gradient(
+          120deg,
+          #24483d 0%,
+          #2f5d50 65%,
+          #486b7a 100%
+        );
+        color: #ffffff;
+      }
+
+      body.kt-dashboard-page .kt-dashboard-hero::after {
+        content: "";
+        position: absolute;
+        width: 280px;
+        height: 280px;
+        right: -90px;
+        top: -125px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 50%;
+        pointer-events: none;
+      }
+
+      body.kt-dashboard-page .kt-dashboard-hero .container {
+        position: relative;
+        z-index: 1;
+      }
+
+      body.kt-dashboard-page .kt-dashboard-hero h1 {
+        font-size: clamp(1.8rem, 3vw, 2.7rem);
+        letter-spacing: -0.025em;
+        margin-bottom: 8px;
+      }
+
+      body.kt-dashboard-page .kt-dashboard-hero p:not(.eyebrow) {
+        max-width: 650px;
+        color: #e7f0ea;
+        margin-top: 7px;
+      }
+
+      /* Main workspace */
+
+      body.kt-dashboard-page .kt-dashboard-workspace {
+        min-width: 0;
+      }
+
+      body.kt-dashboard-page #dashboard-app {
+        min-width: 0;
+        width: 100%;
+      }
+
+      body.kt-dashboard-page #dashboard-app .kt-dashboard {
+        gap: clamp(16px, 2.3vw, 26px);
+        align-items: start;
+      }
+
+      /* Sidebar */
+
+      body.kt-dashboard-page #dashboard-app .kt-sidebar {
+        background: rgba(255, 255, 255, 0.96);
+        border: 1px solid rgba(47, 93, 80, 0.14);
+        border-radius: 18px;
+        box-shadow: 0 8px 28px rgba(36, 36, 36, 0.06);
+        overflow: hidden;
+      }
+
+      body.kt-dashboard-page #dashboard-app .kt-user {
+        padding: 16px 14px;
+        border-bottom: 1px solid #dce5de;
+      }
+
+      body.kt-dashboard-page #dashboard-app .kt-user strong {
+        color: #24483d;
+        overflow-wrap: anywhere;
+      }
+
+      body.kt-dashboard-page #dashboard-app .kt-sidebar nav a {
+        min-height: 44px;
+        border-radius: 11px;
+        transition:
+          background-color 0.18s ease,
+          color 0.18s ease;
+        }
+
+        body.kt-dashboard-page #dashboard-app .kt-sidebar nav a:hover {
+          background: #edf3ef;
+          color: #2f5d50;
+        }
+
+        body.kt-dashboard-page #dashboard-app .kt-sidebar nav a.selected {
+          background: #e5eee8;
+          color: #24483d;
+          box-shadow: inset 4px 0 0 #2f5d50;
+        }
+
+        /* Content panels */
+
+        body.kt-dashboard-page #dashboard-app .kt-dashboard-content {
+          min-width: 0;
+        }
+
+        body.kt-dashboard-page #dashboard-app .kt-panel {
+          background: rgba(255, 255, 255, 0.97);
+          border: 1px solid rgba(47, 93, 80, 0.13);
+          border-radius: 20px;
+          padding: clamp(18px, 2.7vw, 30px);
+          box-shadow: 0 10px 30px rgba(36, 36, 36, 0.055);
+        }
+
+        body.kt-dashboard-page #dashboard-app .kt-panel > h2 {
+          color: #24483d;
+          font-size: clamp(1.35rem, 2.2vw, 1.85rem);
+          line-height: 1.25;
+          margin-bottom: 20px;
+        }
+
+        body.kt-dashboard-page #dashboard-app .kt-panel > h3 {
+          color: #355b4b;
+        }
+
+        /* Statistics */
+
+        body.kt-dashboard-page #dashboard-app .kt-stats {
+          gap: 14px;
+          margin-bottom: 24px;
+        }
+
+        body.kt-dashboard-page #dashboard-app .kt-stat {
+          padding: clamp(15px, 2vw, 21px);
+          border: 1px solid #d7e4da;
+          border-radius: 15px;
+          background: linear-gradient(145deg, #f1f7f2, #ffffff);
+          box-shadow: none;
+        }
+
+        body.kt-dashboard-page #dashboard-app .kt-stat span {
+          color: #52695b;
+          font-size: 0.82rem;
+        }
+
+        body.kt-dashboard-page #dashboard-app .kt-stat strong {
+          color: #285546;
+          font-size: clamp(1.35rem, 2.3vw, 1.85rem);
+        }
+
+        /* Lists and participant records */
+
+        body.kt-dashboard-page #dashboard-app .kt-item {
+          gap: 15px;
+          padding: 18px 0;
+          border-bottom: 1px solid #e0e8e1;
+        }
+
+        body.kt-dashboard-page #dashboard-app .kt-item:last-child {
+          border-bottom: 0;
+        }
+
+        body.kt-dashboard-page #dashboard-app .kt-item strong {
+          color: #294f40;
+        }
+
+        body.kt-dashboard-page #dashboard-app .kt-item p {
+          color: #53645a;
+        }
+
+        body.kt-dashboard-page #dashboard-app .kt-participant {
+          gap: 14px;
+          padding: 16px 0;
+          border-bottom: 1px solid #dce6df;
+        }
+
+        /* Form controls */
+
+        body.kt-dashboard-page #dashboard-app .kt-field input,
+        body.kt-dashboard-page #dashboard-app .kt-field select,
+        body.kt-dashboard-page #dashboard-app .kt-field textarea {
+          border: 1px solid #c3d0c6;
+          border-radius: 10px;
+          background: #ffffff;
+          min-width: 0;
+        }
+
+        body.kt-dashboard-page #dashboard-app .kt-field input:focus,
+        body.kt-dashboard-page #dashboard-app .kt-field select:focus,
+        body.kt-dashboard-page #dashboard-app .kt-field textarea:focus {
+          border-color: #2f5d50;
+          outline: 2px solid rgba(47, 93, 80, 0.2);
+          outline-offset: 1px;
+        }
+
+        /* Dashboard buttons */
+
+        body.kt-dashboard-page #dashboard-app .kt-actions {
+          gap: 10px;
+        }
+
+        body.kt-dashboard-page #dashboard-app .btn {
+          min-height: 43px;
+          border-radius: 999px;
+          padding: 10px 18px;
+          line-height: 1.4;
+        }
+
+        body.kt-dashboard-page #dashboard-app .btn-primary {
+          background: #2f5d50;
+          color: #ffffff;
+        }
+
+        body.kt-dashboard-page #dashboard-app .btn-primary:hover {
+          background: #244a40;
+        }
+
+        /* Existing guide operation elements */
+
+        body.kt-dashboard-page #dashboard-app .kt-guide-booking-card {
+          border: 1px solid #d6e4d9;
+          border-radius: 16px;
+          padding: 18px;
+          background: #f9fbf9;
+          transition:
+            border-color 0.18s ease,
+            box-shadow 0.18s ease;
+          }
+
+          body.kt-dashboard-page #dashboard-app .kt-guide-booking-card:hover {
+            border-color: #a4bfac;
+            box-shadow: 0 6px 18px rgba(47, 93, 80, 0.07);
+          }
+
+          body.kt-dashboard-page #dashboard-app .kt-guide-booking-context {
+            padding: 18px;
+            margin: 18px 0;
+            border: 1px solid #d7e4d9;
+            border-radius: 14px;
+            background: #f2f7f3;
+          }
+
+          body.kt-dashboard-page #dashboard-app .kt-guide-checkin-form {
+            min-width: 0;
+          }
+
+          body.kt-dashboard-page #dashboard-app .kt-guide-pagination {
+            margin-top: 22px;
+          }
+
+          /* Tablet */
+
+          @media (max-width: 900px) {
+            body.kt-dashboard-page #dashboard-app .kt-dashboard {
+              grid-template-columns: minmax(0, 1fr);
+            }
+
+            body.kt-dashboard-page #dashboard-app .kt-sidebar {
+              position: static;
+            }
+
+            body.kt-dashboard-page #dashboard-app .kt-sidebar nav {
+              display: flex;
+              overflow-x: auto;
+              gap: 6px;
+              padding-bottom: 8px;
+            }
+
+            body.kt-dashboard-page #dashboard-app .kt-sidebar nav a {
+              flex: 0 0 auto;
+              white-space: nowrap;
+            }
+          }
+
+          /* Mobile */
+
+          @media (max-width: 600px) {
+            body.kt-dashboard-page .kt-dashboard-page-section {
+              padding: 18px 0 35px;
+            }
+
+            body.kt-dashboard-page #dashboard-app .kt-panel {
+              padding: 17px;
+              border-radius: 15px;
+            }
+
+            body.kt-dashboard-page #dashboard-app .kt-stats {
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+              gap: 10px;
+            }
+
+            body.kt-dashboard-page #dashboard-app .kt-stat {
+              padding: 13px;
+            }
+
+            body.kt-dashboard-page #dashboard-app .kt-item {
+              flex-direction: column;
+              align-items: stretch;
+              gap: 10px;
+            }
+
+            body.kt-dashboard-page #dashboard-app .kt-participant {
+              grid-template-columns: minmax(0, 1fr);
+            }
+
+            body.kt-dashboard-page #dashboard-app .kt-actions {
+              flex-wrap: wrap;
+            }
+
+            body.kt-dashboard-page #dashboard-app .kt-actions .btn {
+              flex: 1 1 auto;
+            }
+
+            body.kt-dashboard-page .kt-dashboard-hero::after {
+              width: 170px;
+              height: 170px;
+              right: -60px;
+            }
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            body.kt-dashboard-page #dashboard-app .kt-sidebar nav a,
+            body.kt-dashboard-page #dashboard-app .kt-guide-booking-card {
+              transition: none;
+            }
+          }
+        </style>
+      </head>
+
+      <body class="kt-dashboard-page kt-lz-page kt-lz-dashboard-page">
+        <header class="site-header">
+          <nav class="navbar container">
+            <a class="logo" href="index.html" aria-label="Kalinga Trails Home">
+              <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="logo-svg"
+              viewBox="240 420 780 430"
+              role="img"
+              aria-label="Kalinga Trails"
+              >
+              <path
               d="M400 609 L505 551 L604 452 L704 527 L733 505 L845 609 L740 562 L727 610 L607 500 L526 570 Z"
               fill="#203B2D"
               stroke="#15291F"
               stroke-width="2"
               stroke-linejoin="round"
-            />
+              />
 
-            <path
+              <path
               d="M681 507 A59 59 0 1 1 779 538 L733 505 L704 527 Z"
               fill="#B98551"
               stroke="#A97842"
               stroke-width="2"
               stroke-linejoin="round"
-            />
+              />
 
-            <text
+              <text
               x="627"
               y="743"
               text-anchor="middle"
@@ -53,95 +401,114 @@
               fill="#102D22"
               textLength="765"
               lengthAdjust="spacingAndGlyphs"
-            >
+              >
               KALINGA
             </text>
 
             <text
-              x="627"
-              y="824"
-              text-anchor="middle"
-              font-family="Arial, Helvetica, sans-serif"
-              font-size="53"
-              font-weight="400"
-              letter-spacing="25"
-              fill="#C49A57"
-              textLength="342"
-              lengthAdjust="spacingAndGlyphs"
+            x="627"
+            y="824"
+            text-anchor="middle"
+            font-family="Arial, Helvetica, sans-serif"
+            font-size="53"
+            font-weight="400"
+            letter-spacing="25"
+            fill="#C49A57"
+            textLength="342"
+            lengthAdjust="spacingAndGlyphs"
             >
-              TRAILS
-            </text>
-          </svg>
-        </a>
-        <input
-          type="checkbox"
-          id="nav-toggle"
-          class="nav-toggle"
-          aria-label="Toggle navigation menu"
-        />
-        <label for="nav-toggle" class="nav-toggle-label"><span></span></label>
-        <ul class="nav-links">
-          <li><a href="index.html">Home</a></li>
+            TRAILS
+          </text>
+        </svg>
+      </a>
+
+      <input
+      type="checkbox"
+      id="nav-toggle"
+      class="nav-toggle"
+      aria-label="Toggle navigation menu"
+      />
+      <label for="nav-toggle" class="nav-toggle-label">
+      <span></span>
+      </label>
+
+      <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="about.html">About Us</a></li>
+      <li><a href="trails.html">Trails &amp; Hikes</a></li>
+      <li><a href="community.html">Community</a></li>
+      <li><a href="gallery.html">Gallery</a></li>
+      <li><a href="contact.html">Contact Us</a></li>
+      </ul>
+
+      <div class="nav-actions">
+      <a class="btn btn-outline" href="auth.html">Log In</a>
+      <a class="btn btn-primary" href="auth.html?mode=signup">Sign Up</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="page-hero kt-dashboard-hero">
+      <div class="container">
+      <p class="eyebrow">Kalinga Trails</p>
+      <h1>Your Dashboard</h1>
+      <p>Manage your hiking activities in one place.</p>
+      </div>
+    </section>
+
+    <section class="section kt-dashboard-page-section">
+      <div class="container kt-dashboard-workspace">
+        <!-- Keep this ID unchanged for your existing app.js -->
+      <div id="dashboard-app"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+        <h3>Kalinga Trails</h3>
+          <p>
+            Organized hiking experiences built around adventure,
+            community, and progress.
+          </p>
+        </div>
+
+        <div>
+        <h3>Quick Links</h3>
+          <ul class="footer-links">
           <li><a href="about.html">About Us</a></li>
-          <li><a href="trails.html">Trails & Hikes</a></li>
-          <li><a href="community.html">Community</a></li>
+          <li><a href="trails.html">Trails &amp; Hikes</a></li>
           <li><a href="gallery.html">Gallery</a></li>
           <li><a href="contact.html">Contact Us</a></li>
-        </ul>
-        <div class="nav-actions">
-          <a class="btn btn-outline" href="auth.html">Log In</a
-          ><a class="btn btn-primary" href="auth.html?mode=signup">Sign Up</a>
+          </ul>
         </div>
-      </nav>
-    </header>
-    <main>
-      <section class="page-hero">
-        <div class="container">
-          <p class="eyebrow">Kalinga Trails</p>
-          <h1>Your Dashboard</h1>
-          <p>Manage your hiking activities in one place.</p>
+
+        <div>
+        <h3>Contact</h3>
+        <p>hello@kalingatrails.example</p>
+        <p>+63 900 123 4567</p>
         </div>
-      </section>
-      <section class="section">
-        <div class="container"><div id="dashboard-app"></div></div>
-      </section>
-    </main>
-    <footer class="site-footer">
-      <div class="container">
-        <div class="footer-grid">
-          <div>
-            <h3>Kalinga Trails</h3>
-            <p>
-              Organized hiking experiences built around adventure, community,
-              and progress.
-            </p>
-          </div>
-          <div>
-            <h3>Quick Links</h3>
-            <ul class="footer-links">
-              <li><a href="about.html">About Us</a></li>
-              <li><a href="trails.html">Trails & Hikes</a></li>
-              <li><a href="gallery.html">Gallery</a></li>
-              <li><a href="contact.html">Contact Us</a></li>
-            </ul>
-          </div>
-          <div>
-            <h3>Contact</h3>
-            <p>hello@kalingatrails.example</p>
-            <p>+63 900 123 4567</p>
-          </div>
-          <div>
-            <h3>Social Accounts</h3>
-            <div class="social-links">
-              <span class="kt-social-label">Facebook (coming soon)</span>
-              <span class="kt-social-label">YouTube (coming soon)</span>
-              <span class="kt-social-label">Instagram (coming soon)</span>
-            </div>
+
+        <div>
+        <h3>Social Accounts</h3>
+          <div class="social-links">
+          <span class="kt-social-label">Facebook (coming soon)</span>
+          <span class="kt-social-label">YouTube (coming soon)</span>
+          <span class="kt-social-label">Instagram (coming soon)</span>
           </div>
         </div>
-        <p class="copyright">© 2026 Kalinga Trails. All rights reserved.</p>
       </div>
-    </footer>
-    <script defer src="app.js"></script>
-  </body>
+
+      <p class="copyright">
+        © 2026 Kalinga Trails. All rights reserved.
+      </p>
+    </div>
+  </footer>
+
+  <!-- Original application script, unchanged -->
+<script defer src="app.js"></script>
+</body>
 </html>
