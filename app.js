@@ -5,7 +5,7 @@
   const KEY = "kalinga-trails-demo-v3";
   // Classroom-only starter accounts. They are not production credentials.
   const demoPasswordHashes = {
-    "guide@kalinga.demo": "fb031472e789a99cb3b7c489bdf2f345bb8ab19a2fa37b47bf393c469b9d6b9b",
+    "alex@kalinga.demo": "7f636b2cfa37d2bcf43fc4079e4a22113871be70feef69a55774a9ef5a30cb06",
     "admin@kalinga.demo": "98c70b2095b654152f2af418b6d027af845d1b7fa7d6f55d59b0088daf11f1de",
   };
   const $ = (s, root = document) => root.querySelector(s);
@@ -36,9 +36,9 @@
         {
           id: 1,
           name: "Alex Rivera",
-          email: "guide@kalinga.demo",
+          email: "alex@kalinga.demo",
           role: "guide",
-          pass: demoPasswordHashes["guide@kalinga.demo"],
+          pass: demoPasswordHashes["alex@kalinga.demo"],
           bio: "Local hiking guide",
           level: "Experienced",
         },
@@ -165,17 +165,32 @@
   } catch {
     state = initial();
   }
-  // Preserve previously registered users and bookings when this version is opened.
-  // Only the two unchanged original demo accounts are upgraded with demo logins.
+  // Keep existing accounts and bookings. Rename only the original starter Guide.
+  // Existing customized Guide passwords are upgraded after their next valid login.
+  let starterAccountUpdated = false;
   for (const user of state.users) {
     if (
-      !user.pass &&
-      ((user.id === 1 && user.role === "guide" && user.email === "guide@kalinga.demo") ||
-        (user.id === 2 && user.role === "admin" && user.email === "admin@kalinga.demo"))
+      user.id === 1 &&
+      user.role === "guide" &&
+      user.email === "guide@kalinga.demo" &&
+      !state.users.some((other) => other.id !== user.id && other.email === "alex@kalinga.demo")
     ) {
-      user.pass = demoPasswordHashes[user.email];
+      user.email = "alex@kalinga.demo";
+      if (!user.pass || user.pass === "fb031472e789a99cb3b7c489bdf2f345bb8ab19a2fa37b47bf393c469b9d6b9b") {
+        user.pass = demoPasswordHashes["alex@kalinga.demo"];
+      }
+      starterAccountUpdated = true;
+    }
+    if (!user.pass && user.id === 1 && user.role === "guide" && user.email === "alex@kalinga.demo") {
+      user.pass = demoPasswordHashes["alex@kalinga.demo"];
+      starterAccountUpdated = true;
+    }
+    if (!user.pass && user.id === 2 && user.role === "admin" && user.email === "admin@kalinga.demo") {
+      user.pass = demoPasswordHashes["admin@kalinga.demo"];
+      starterAccountUpdated = true;
     }
   }
+  if (starterAccountUpdated) save();
   function save() {
     try {
       localStorage.setItem(KEY, JSON.stringify(state));
@@ -282,9 +297,34 @@
   function displayAuth() {
     const wrap = $("#auth-app");
     if (!wrap) return;
-    const signing =
-      new URLSearchParams(location.search).get("mode") === "signup";
-    wrap.innerHTML = `<div class="kt-panel kt-auth"><h2>${signing ? "Create a hiker account" : "Welcome back"}</h2><p class="kt-muted">Browser-only classroom demonstration. Do not enter real passwords or medical details.</p><form id="auth-form"><div class="kt-fields">${signing ? field("Full name", "name", "text", "", 'required minlength="2" maxlength="80" autocomplete="name"') : ""}${field("Email", "email", "email", "", 'required maxlength="254" autocomplete="email"')}${field("Password", "password", "password", "", 'required minlength="6" maxlength="100" autocomplete="' + (signing ? "new-password" : "current-password") + '"')}${signing ? field("Confirm password", "confirmPassword", "password", "", 'required minlength="6" maxlength="100" autocomplete="new-password"') : ""}</div><label class="kt-show-password"><input type="checkbox" id="kt-show-password"> Show password</label><button class="btn btn-primary" type="submit">${signing ? "Sign Up" : "Log In"}</button></form>${signing ? '<p class="kt-muted">New accounts are registered as <strong>Hikers</strong>. Guide accounts are added by an Administrator.</p>' : ''}<p style="margin-top:16px">${signing ? "Already registered?" : "New to Kalinga Trails?"} <a class="kt-link" href="auth.html${signing ? "" : "?mode=signup"}">${signing ? "Log in" : "Create an account"}</a></p><hr class="kt-separator"><h3>Local demo access</h3><p class="kt-muted">Demo logins: Guide <strong>guide@kalinga.demo</strong> / <strong>GuideDemo2026!</strong>; Administrator <strong>admin@kalinga.demo</strong> / <strong>AdminDemo2026!</strong>. These accounts are for local testing only.</p><p class="kt-muted">The following shortcuts still preview roles without password checks, as in the original prototype.</p><div class="kt-actions">${btn("demo-role", "Preview Guide Dashboard", "guide")}${btn("demo-role", "Preview Admin Dashboard", "admin")}</div></div>`;
+    const params = new URLSearchParams(location.search);
+    const currentPage = location.pathname.split("/").pop().toLowerCase();
+    const pageRoles = {
+      "hiker-login.html": "hiker",
+      "guide-login.html": "guide",
+      "admin-login.html": "admin",
+    };
+    const selectedRole = pageRoles[currentPage] ||
+      (["hiker", "guide", "admin"].includes(params.get("role")) ? params.get("role") : "");
+    const signing = params.get("mode") === "signup" && (!selectedRole || selectedRole === "hiker");
+    const role = signing ? "hiker" : selectedRole;
+    const nextParam = params.get("next") || "";
+    const returnTo = nextParam ? `?next=${encodeURIComponent(nextParam)}` : "";
+    const signUpUrl = "hiker-login.html?mode=signup" + (nextParam ? `&next=${encodeURIComponent(nextParam)}` : "");
+    const hikerUrl = "hiker-login.html" + returnTo;
+    const roleLabels = { hiker: "Hiker", guide: "Guide", admin: "Administrator" };
+    // The normal Log In entry point lets users pick one of three separate login pages.
+    // The existing auth.html?mode=signup URL remains supported for older navigation links.
+    if (!role) {
+      wrap.innerHTML = `<section class="kt-panel kt-auth-role-select"><p class="kt-lz-overline">Find your place on the trail</p><h2>Select your account</h2><p class="kt-muted">Choose the correct login for your role. Each account opens its own dashboard.</p><div class="kt-lz-role-grid"><a class="kt-lz-role-card" href="${hikerUrl}"><span class="kt-lz-role-symbol" aria-hidden="true">⛰</span><h3>Hiker / User</h3><p>Book adventures, view your progress and connect with hikers.</p><span class="kt-lz-role-enter">Hiker Login →</span></a><a class="kt-lz-role-card" href="guide-login.html"><span class="kt-lz-role-symbol" aria-hidden="true">🥾</span><h3>Guide</h3><p>View assigned hikes, participants, check-ins and reports.</p><span class="kt-lz-role-enter">Guide Login →</span></a><a class="kt-lz-role-card" href="admin-login.html"><span class="kt-lz-role-symbol" aria-hidden="true">🗺</span><h3>Administrator</h3><p>Manage bookings, guides, customers and trail operations.</p><span class="kt-lz-role-enter">Admin Login →</span></a></div><p class="kt-lz-role-signup">New hiker? <a class="kt-link" href="${signUpUrl}">Create a Hiker Account</a></p><p class="kt-muted kt-lz-role-note">Local classroom prototype. Please do not use real account passwords or sensitive personal information.</p></section>`;
+      return;
+    }
+    const demo = role === "guide"
+      ? '<p class="kt-muted">Guide demo: <strong>alex@kalinga.demo</strong> / <strong>GuideDemo2026!</strong></p>'
+      : role === "admin"
+        ? '<p class="kt-muted">Admin demo: <strong>admin@kalinga.demo</strong> / <strong>AdminDemo2026!</strong></p>'
+        : "";
+    wrap.innerHTML = `<div class="kt-panel kt-auth"><p class="kt-lz-overline">${esc(roleLabels[role])} account</p><h2>${signing ? "Create a hiker account" : `${esc(roleLabels[role])} Login`}</h2><p class="kt-muted">Browser-only classroom demonstration. Do not enter real passwords or medical details.</p><form id="auth-form"><div class="kt-fields">${signing ? field("Full name", "name", "text", "", 'required minlength="2" maxlength="80" autocomplete="name"') : ""}${field("Email", "email", "email", "", 'required maxlength="254" autocomplete="email"')}${field("Password", "password", "password", "", 'required minlength="6" maxlength="100" autocomplete="' + (signing ? "new-password" : "current-password") + '"')}${signing ? field("Confirm password", "confirmPassword", "password", "", 'required minlength="6" maxlength="100" autocomplete="new-password"') : ""}</div><label class="kt-show-password"><input type="checkbox" id="kt-show-password"> Show password</label><button class="btn btn-primary" type="submit">${signing ? "Sign Up" : `Log In as ${esc(roleLabels[role])}`}</button></form>${signing ? '<p class="kt-muted">New public accounts are registered as <strong>Hikers</strong>. Guide accounts are added by an Administrator.</p>' : ""}<p style="margin-top:16px">${role === "hiker" ? (signing ? `Already registered? <a class="kt-link" href="${hikerUrl}">Hiker Login</a>` : `New hiker? <a class="kt-link" href="${signUpUrl}">Create an account</a>`) : "Only accounts assigned to this role can log in here."}</p><hr class="kt-separator">${demo}<p><a class="kt-link" href="auth.html">← Choose a different account</a></p></div>`;
     $("#kt-show-password")?.addEventListener("change", (e) => {
       $$('#auth-form input[type="password"], #auth-form input[name="password"], #auth-form input[name="confirmPassword"]').forEach((input) => {
         input.type = e.target.checked ? "text" : "password";
@@ -315,12 +355,12 @@
         state.users.push(u);
         notice(u.id, "Welcome to Kalinga Trails!");
       } else {
-        if (!u || !u.pass || u.pass !== (await digest(v.password + email)))
-          return toast("Email or password is incorrect.", true);
+        if (!u || u.role !== role || !(await checkPassword(u, v.password)))
+          return toast("Email or password is incorrect for this login.", true);
       }
       state.session = u.id;
       save();
-      // A booking continuation is available to hikers only.
+      // Booking continuations are available to Hikers only.
       location.href = u.role === "hiker" ? safeNext() : "dashboard.html";
     });
   }
@@ -329,6 +369,21 @@
     return /^(book\.html\?hike=\d+|dashboard\.html)$/.test(requested)
       ? requested
       : "dashboard.html";
+  }
+  async function checkPassword(user, password) {
+    if (!user.pass) return false;
+    const currentHash = await digest(password + user.email);
+    if (user.pass === currentHash) return true;
+    // Existing browser data may contain a custom password hashed with the old Guide email.
+    if (
+      user.id === 1 && user.role === "guide" && user.email === "alex@kalinga.demo" &&
+      user.pass === (await digest(password + "guide@kalinga.demo"))
+    ) {
+      user.pass = currentHash;
+      save();
+      return true;
+    }
+    return false;
   }
   async function digest(s) {
     const arr = await crypto.subtle.digest(
@@ -1181,20 +1236,39 @@
     if (["participants", "attendance", "completion"].includes(tab)) {
       return guideBookingWorkspace(tab, bookings);
     }
-    return panel(
-      tab === "assigned" ? "Assigned Hikes" : "Guide Dashboard",
-      stats([
+    if (tab === "assigned")
+      return panel(
+        "Assigned Hikes",
+        stats([
+          ["Assigned hikes", assigned.length],
+          ["Confirmed bookings", bookings.length],
+          ["Upcoming hikes", assigned.filter((h) => h.date >= today()).length],
+        ]) +
+          assigned
+            .map(
+              (h) =>
+                `<div class="kt-item"><div><strong>${esc(hikeTitle(h))}</strong><p>${fullDate(h.date)} · ${esc(h.status)} · ${state.bookings.filter((b) => b.hikeId === h.id && b.status === "confirmed").reduce((n, b) => n + b.participants.length, 0)} confirmed participants</p></div><a class="btn btn-secondary" href="dashboard.html?tab=attendance&amp;hike=${h.id}">Check In</a></div>`,
+            )
+            .join("") + (assigned.length ? "" : empty("No hikes assigned yet.")),
+      );
+    const upcoming = assigned
+      .filter((h) => h.date >= today())
+      .slice()
+      .sort((a, b) => a.date.localeCompare(b.date));
+    return `<section class="kt-panel kt-lz-overview-panel kt-lz-role-overview">
+      <div class="kt-lz-panel-top"><p class="kt-lz-overline">Your guiding workspace</p><h2>Welcome back, ${esc(u.name.split(" ")[0])}!</h2><p class="kt-muted">Everything you need to manage your guided hikes, in one place.</p></div>
+      ${stats([
         ["Assigned hikes", assigned.length],
         ["Confirmed bookings", bookings.length],
-        ["Upcoming hikes", assigned.filter((h) => h.date >= today()).length],
-      ]) +
-        assigned
-          .map(
-            (h) =>
-              `<div class="kt-item"><div><strong>${esc(hikeTitle(h))}</strong><p>${fullDate(h.date)} · ${esc(h.status)} · ${state.bookings.filter((b) => b.hikeId === h.id && b.status === "confirmed").reduce((n, b) => n + b.participants.length, 0)} confirmed participants</p></div><a class="btn btn-secondary" href="dashboard.html?tab=attendance&amp;hike=${h.id}">Check In</a></div>`,
-          )
-          .join(""),
-    );
+        ["Upcoming hikes", upcoming.length],
+        ["Participants", bookings.reduce((total, b) => total + b.participants.length, 0)],
+      ])}
+      <div class="kt-lz-upcoming-head"><h3>Upcoming assigned hikes</h3><a href="dashboard.html?tab=assigned">View all assigned hikes →</a></div>
+      ${upcoming.length ? `<div class="kt-lz-upcoming-list">${upcoming.slice(0, 3).map((h) =>
+        `<a class="kt-lz-upcoming-card" href="dashboard.html?tab=attendance&amp;hike=${h.id}"><div><span class="kt-lz-small-label">${esc(fullDate(h.date))}</span><h4>${esc(hikeTitle(h))}</h4><p>${esc(trail(h.trailId)?.location || "")} · ${state.bookings.filter((b) => b.hikeId === h.id && b.status === "confirmed").reduce((n, b) => n + b.participants.length, 0)} confirmed participants</p></div><span class="kt-lz-status">${esc(h.status === "active" ? "Scheduled" : "Closed")}</span></a>`
+      ).join("")}</div>` : `<div class="kt-lz-empty-overview"><span aria-hidden="true">⛰</span><div><h4>No upcoming assigned hikes</h4><p>Scheduled hikes assigned to you will appear here.</p></div></div>`}
+      <div class="kt-actions kt-lz-dashboard-actions"><a href="dashboard.html?tab=assigned" class="btn btn-primary">Assigned Hikes</a><a href="dashboard.html?tab=attendance" class="btn btn-secondary">Check-in</a></div>
+    </section>`;
   }
   function guideBookingWorkspace(tab, bookings) {
     const titles = {
@@ -1416,19 +1490,23 @@
           ],
         )}${field("Photo URL", "image", "url", "", "required")}</div><button class="btn btn-primary">Add Gallery Photo</button></form>${state.gallery.map((g) => `<div class="kt-item"><strong>${esc(g.caption)}</strong>${btn("remove-gallery", "Remove", g.id)}</div>`).join("")}`,
       );
-    return panel(
-      "Administrator Dashboard",
-      stats([
+    const recentBookings = bs.slice().reverse().sort((a, b) => Number(b.status === "pending") - Number(a.status === "pending"));
+    return `<section class="kt-panel kt-lz-overview-panel kt-lz-role-overview">
+      <div class="kt-lz-panel-top"><p class="kt-lz-overline">Your management workspace</p><h2>Welcome back, ${esc(u.name.split(" ")[0])}!</h2><p class="kt-muted">Everything you need to oversee Kalinga Trails operations, in one place.</p></div>
+      ${stats([
         ["Total bookings", bs.length],
         ["Pending bookings", bs.filter((b) => b.status === "pending").length],
-        [
-          "Active hikes",
-          state.hikes.filter((h) => h.status === "active").length,
-        ],
-        ["Customers", state.users.filter((x) => x.role === "hiker").length],
-      ]) +
-        `<p>Review requests, assign guides, maintain trails, and monitor verified hiking operations.</p><div class="kt-actions"><a class="btn btn-primary" href="dashboard.html?tab=bookings">Review Bookings</a><a class="btn btn-secondary" href="dashboard.html?tab=reports">View Reports</a></div><h3>Contact inquiries</h3>${state.inquiries.map((i) => `<div class="kt-item"><div><strong>${esc(i.name)} · ${esc(i.topic)}</strong><p>${esc(i.message)}</p><small>${esc(i.email)}</small></div>${btn("delete-inquiry", "Archive", i.id)}</div>`).join("") || empty("No inquiries received in this browser.")}`,
-    );
+        ["Active hikes", state.hikes.filter((h) => h.status === "active").length],
+        ["Hikers", state.users.filter((x) => x.role === "hiker").length],
+      ])}
+      <div class="kt-lz-upcoming-head"><h3>Recent booking requests</h3><a href="dashboard.html?tab=bookings">View all bookings →</a></div>
+      ${recentBookings.length ? `<div class="kt-lz-upcoming-list">${recentBookings.slice(0, 3).map((b) =>
+        `<a class="kt-lz-upcoming-card" href="dashboard.html?tab=bookings"><div><span class="kt-lz-small-label">${esc(fullDate(hike(b.hikeId)?.date))}</span><h4>${esc(hikeTitle(hike(b.hikeId)))}</h4><p>${esc(who(b.userId)?.name || "Hiker")} · Booking #${b.id}</p></div><span class="kt-lz-status kt-lz-status-${esc(b.status)}">${esc(b.status === "pending" ? "Pending Approval" : b.status.charAt(0).toUpperCase() + b.status.slice(1))}</span></a>`
+      ).join("")}</div>` : `<div class="kt-lz-empty-overview"><span aria-hidden="true">⛰</span><div><h4>No booking requests yet</h4><p>New Hiker bookings will appear here for review.</p></div></div>`}
+      <div class="kt-actions kt-lz-dashboard-actions"><a href="dashboard.html?tab=bookings" class="btn btn-primary">Review Bookings</a><a href="dashboard.html?tab=reports" class="btn btn-secondary">View Reports</a></div>
+      <div class="kt-lz-upcoming-head kt-lz-inquiry-heading"><h3>Contact inquiries</h3></div>
+      ${state.inquiries.map((i) => `<div class="kt-item"><div><strong>${esc(i.name)} · ${esc(i.topic)}</strong><p>${esc(i.message)}</p><small>${esc(i.email)}</small></div>${btn("delete-inquiry", "Archive", i.id)}</div>`).join("") || empty("No inquiries received in this browser.")}
+    </section>`;
   }
   function accountPane(u) {
     const roleLabel = { hiker: "Hiker", guide: "Guide", admin: "Administrator" }[u.role] || "User";
@@ -1504,7 +1582,7 @@
     const tabs = tabConfig[u.role],
       requested = new URLSearchParams(location.search).get("tab") || "overview",
       tab = tabs.some((x) => x[0] === requested) ? requested : "overview";
-    host.innerHTML = `<div class="kt-dashboard ${u.role === "hiker" ? "kt-lz-hiker-dashboard" : ""}"><aside class="kt-sidebar"><div class="kt-user"><strong>${esc(u.name)}</strong><p>${esc(u.role.toUpperCase())}</p></div><label class="kt-mobile-section-control" for="kt-mobile-section"><span>Dashboard section</span><select id="kt-mobile-section" aria-label="Choose dashboard section">${tabs.map(([slug, name]) => `<option value="${slug}" ${slug === tab ? "selected" : ""}>${esc(name)}</option>`).join("")}</select></label><nav aria-label="Dashboard sections">${tabs.map(([slug, name]) => `<a class="${slug === tab ? "selected" : ""}" ${slug === tab ? 'aria-current="page"' : ""} href="dashboard.html?tab=${slug}">${esc(name)}${slug === "notifications" ? ` (${state.notifications.filter((n) => n.userId === u.id && !n.read).length})` : ""}</a>`).join("")}</nav></aside><div class="kt-dashboard-content">${u.role === "hiker" ? hikerPane(tab, u) : u.role === "guide" ? guidePane(tab, u) : adminPane(tab, u)}</div></div>`;
+    host.innerHTML = `<div class="kt-dashboard kt-lz-hiker-dashboard"><aside class="kt-sidebar"><div class="kt-user"><strong>${esc(u.name)}</strong><p>${esc(u.role.toUpperCase())}</p></div><label class="kt-mobile-section-control" for="kt-mobile-section"><span>Dashboard section</span><select id="kt-mobile-section" aria-label="Choose dashboard section">${tabs.map(([slug, name]) => `<option value="${slug}" ${slug === tab ? "selected" : ""}>${esc(name)}</option>`).join("")}</select></label><nav aria-label="Dashboard sections">${tabs.map(([slug, name]) => `<a class="${slug === tab ? "selected" : ""}" ${slug === tab ? 'aria-current="page"' : ""} href="dashboard.html?tab=${slug}">${esc(name)}${slug === "notifications" ? ` (${state.notifications.filter((n) => n.userId === u.id && !n.read).length})` : ""}</a>`).join("")}</nav></aside><div class="kt-dashboard-content">${u.role === "hiker" ? hikerPane(tab, u) : u.role === "guide" ? guidePane(tab, u) : adminPane(tab, u)}</div></div>`;
     bindForms();
   }
   function dashboardTabUrl(tab, bookingId = null, hikeId = null) {
@@ -1566,7 +1644,7 @@
     on("account-password-form", async (f, v) => {
       const u = me();
       if (!u || !u.pass) return toast("This account has no password. Ask an Administrator to set one.", true);
-      if (u.pass !== (await digest(v.currentPassword + u.email)))
+      if (!(await checkPassword(u, v.currentPassword)))
         return toast("Current password is incorrect.", true);
       if (v.newPassword !== v.confirmPassword)
         return toast("New passwords do not match.", true);
@@ -1852,11 +1930,8 @@
       return;
     }
     if (name === "demo-role") {
-      const demo = state.users.find((x) => x.role === id);
-      if (!demo) return;
-      state.session = demo.id;
-      save();
-      location.href = "dashboard.html";
+      // Older demo shortcuts now open the appropriate password login instead of bypassing it.
+      location.href = id === "guide" ? "guide-login.html" : id === "admin" ? "admin-login.html" : "hiker-login.html";
       return;
     }
     if (!u) return (location.href = "auth.html");
