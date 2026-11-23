@@ -957,6 +957,8 @@
         return toast("Provide a valid name for each participant.", true);
       if (names[0].toLocaleLowerCase() !== me().name.toLocaleLowerCase())
         return toast("The first participant must be the account holder.", true);
+      if (state.bookings.some((existing) => existing.userId === me().id && existing.hikeId === h.id && ["pending", "confirmed"].includes(existing.status)))
+        return toast("You already have an active booking for this hike.", true);
       const b = {
         id: next(),
         userId: me().id,
@@ -999,6 +1001,7 @@
           .filter(
             (p, i) =>
               i === 0 &&
+              p.attendance === "present" &&
               p.completion === "completed" &&
               p.accountUserId === u.id,
           )
@@ -1010,63 +1013,149 @@
     const n = completed(u).length;
     return state.achievements.map((a) => ({ ...a, earned: n >= a.count }));
   }
+  // Module 8 — Booking Management. Status and progress are calculated from
+  // existing records; no second list or stored statistic can become out of sync.
+  function bookingStage(b) {
+    const holder = (b.participants || []).find((p) => p.accountUserId === b.userId);
+    const date = hike(b.hikeId)?.date || "";
+    if (b.status === "cancelled" || b.status === "rejected")
+      return { key: "cancelled", label: "Cancelled", when: "history" };
+    if (b.status === "confirmed" && holder?.attendance === "present" && holder?.completion === "completed")
+      return { key: "completed", label: "Guide Verified", when: "history" };
+    if (b.status === "confirmed" && holder?.completion === "not-completed")
+      return { key: "not-completed", label: "Not completed", when: "history" };
+    if (b.status === "pending")
+      return { key: "pending", label: date && date < today() ? "Pending (past date)" : "Pending Approval", when: date && date < today() ? "history" : "upcoming" };
+    if (date && date < today())
+      return { key: "past", label: "Awaiting guide record", when: "history" };
+    if (b.status === "confirmed")
+      return { key: "confirmed", label: "Confirmed", when: "upcoming" };
+    return { key: "past", label: b.status || "Unknown", when: "history" };
+  }
+  function hikerTotals(u) {
+    const records = completed(u);
+    const myRecords = state.bookings.filter((b) => b.userId === u.id);
+    const distances = records.map(({ h }) => Number(trail(h.trailId)?.distance) || 0);
+    const elevations = records.map(({ h }) => Number(trail(h.trailId)?.elevation) || 0);
+    return {
+      records,
+      bookings: myRecords,
+      distance: Math.round(distances.reduce((total, d) => total + d, 0) * 10) / 10,
+      trails: new Set(records.map(({ h }) => h.trailId)).size,
+      highest: elevations.length ? Math.max(...elevations) : 0,
+    };
+  }
   function myBookings(u) {
-    const list = state.bookings
+    const records = state.bookings
       .filter((b) => b.userId === u.id)
       .slice()
-      .reverse();
-    return `<section class="kt-panel kt-lz-bookings-panel"><div class="kt-lz-panel-top d-flex flex-wrap justify-content-between align-items-center gap-3"><div><p class="kt-lz-overline">Your reservations</p><h2>My Bookings</h2></div><a class="btn btn-outline" href="trails.html">Explore more trails</a></div>
-      ${
-        list.length
-          ? `<div class="kt-lz-booking-list">${list
-              .map((b) => {
-                const h = hike(b.hikeId),
-                  t = h && trail(h.trailId);
-                const mapButton =
-                  b.status === "confirmed" && t
-                    ? btn(
-                        "view-map",
-                        "View Map",
-                        b.id,
-                        "btn btn-primary kt-view-map-btn",
-                      )
-                    : "";
-                const cancelButton = ["pending", "confirmed"].includes(b.status)
-                  ? btn(
-                      "cancel-booking",
-                      "Cancel booking",
-                      b.id,
-                      "btn btn-secondary",
-                    )
-                  : "";
-                const stateLabel =
-                  b.status === "pending"
-                    ? "Pending Approval"
-                    : b.status.charAt(0).toUpperCase() + b.status.slice(1);
-                return `<article class="kt-lz-booking-card"><div class="kt-lz-booking-card-head d-flex align-items-start flex-wrap justify-content-between gap-2"><div><span class="kt-lz-small-label">Booking #${esc(b.id)}</span><h3>${esc(hikeTitle(h))}</h3><p>${esc(t?.location || "Location unavailable")}</p></div><span class="kt-lz-status kt-lz-status-${esc(b.status)}">${esc(stateLabel)}</span></div>
-          <div class="kt-lz-booking-details row g-3"><div class="col-6 col-lg-3"><small>Date</small><strong>${esc(fullDate(h?.date))}</strong></div><div class="col-6 col-lg-3"><small>Participants</small><strong>${b.participants.length}</strong></div><div class="col-6 col-lg-3"><small>Guide</small><strong>${esc(who(h?.guideId)?.name || "To be assigned")}</strong></div><div class="col-6 col-lg-3"><small>Meeting point</small><strong>${esc(t?.meeting || "To be announced")}</strong></div></div>
-          <div class="kt-lz-booking-actions d-flex flex-wrap justify-content-between align-items-center gap-2"><span class="kt-muted">${b.status === "pending" ? "Waiting for administrator review" : b.status === "confirmed" ? "Your hike is confirmed. Review the map before departure." : "Booking no longer active"}</span><div class="kt-actions kt-my-booking-actions">${mapButton}${cancelButton}</div></div>
+      .sort((a, b) => (b.created || "").localeCompare(a.created || "") || b.id - a.id);
+    const done = completed(u).length;
+    return `<section class="kt-panel kt-lz-bookings-panel kt-bm-module">
+      <div class="kt-lz-panel-top kt-bm-panel-header"><div><p class="kt-lz-overline">Your reservations</p><h2>My Bookings</h2><p class="kt-muted">Review booking requests, track approval, and view your hike details.</p></div><a class="btn btn-outline" href="trails.html">Explore more trails</a></div>
+      ${stats([
+        ["Total requests", records.length],
+        ["Pending approval", records.filter((b) => b.status === "pending").length],
+        ["Upcoming confirmed", records.filter((b) => bookingStage(b).key === "confirmed").length],
+        ["Verified hikes", done],
+      ])}
+      ${records.length ? `<div class="kt-bm-toolbar"><label class="kt-field">Show bookings<select id="kt-bm-when"><option value="all">All bookings</option><option value="upcoming">Upcoming</option><option value="history">Past / cancelled</option></select></label><label class="kt-field">Booking status<select id="kt-bm-status"><option value="all">All statuses</option><option value="pending">Pending approval</option><option value="confirmed">Confirmed</option><option value="completed">Guide verified</option><option value="past">Awaiting guide record</option><option value="cancelled">Cancelled</option><option value="not-completed">Not completed</option></select></label><label class="kt-field">Search booking<input id="kt-bm-search" type="search" placeholder="Trail, location or ID" autocomplete="off"></label></div><p class="kt-bm-count kt-muted" id="kt-bm-count" role="status">${records.length} bookings</p>
+      <div class="kt-lz-booking-list" id="kt-bm-list">${records.map((b) => {
+        const h = hike(b.hikeId);
+        const t = trail(h?.trailId);
+        const stage = bookingStage(b);
+        const mapButton = b.status === "confirmed" && t
+          ? btn("view-map", "View Map", b.id, "btn btn-primary kt-view-map-btn") : "";
+        const cancelButton = ["pending", "confirmed"].includes(b.status) && h?.date >= today() && stage.key !== "completed"
+          ? btn("cancel-booking", "Cancel booking", b.id, "btn btn-secondary") : "";
+        const message = stage.key === "pending" ? "Waiting for an administrator's approval."
+          : stage.key === "confirmed" ? "Your hike is confirmed. The guide will record attendance after your hike."
+          : stage.key === "completed" ? "Your attendance and completion were verified by your guide."
+          : stage.key === "past" ? "A past booking is not counted as completed until guide verification."
+          : stage.key === "not-completed" ? "The guide recorded this hike as not completed."
+          : "This booking is no longer active.";
+        const searchText = `${b.id} ${hikeTitle(h)} ${t?.location || ""}`.toLowerCase();
+        return `<article class="kt-lz-booking-card" data-kt-bm-card data-when="${stage.when}" data-status="${stage.key}" data-search="${esc(searchText)}">
+          <div class="kt-lz-booking-card-head d-flex align-items-start flex-wrap justify-content-between gap-2"><div><span class="kt-lz-small-label">Booking #${esc(b.id)}</span><h3>${esc(hikeTitle(h))}</h3><p>${esc(t?.location || "Location unavailable")}</p></div><span class="kt-lz-status kt-lz-status-${stage.key}">${esc(stage.label)}</span></div>
+          <div class="kt-lz-booking-details row g-3"><div class="col-6 col-lg-3"><small>Date</small><strong>${esc(fullDate(h?.date))}</strong></div><div class="col-6 col-lg-3"><small>Participants</small><strong>${(b.participants || []).length}</strong></div><div class="col-6 col-lg-3"><small>Guide</small><strong>${esc(who(h?.guideId)?.name || "To be assigned")}</strong></div><div class="col-6 col-lg-3"><small>Meeting point</small><strong>${esc(t?.meeting || "To be announced")}</strong></div></div>
+          <div class="kt-lz-booking-actions d-flex flex-wrap justify-content-between align-items-center gap-2"><span class="kt-muted">${esc(message)}</span><div class="kt-actions kt-my-booking-actions">${btn("hiker-booking-details", "View Details", b.id, "btn btn-outline")}${mapButton}${cancelButton}</div></div>
         </article>`;
-              })
-              .join("")}</div>`
-          : `<div class="kt-lz-no-bookings"><span aria-hidden="true">⛰</span><h3>Your trail adventures start here</h3><p>Browse available hikes and send a booking request.</p><a href="trails.html" class="btn btn-primary">Find a hike</a></div>`
-      }
+      }).join("")}</div><p id="kt-bm-no-matches" class="kt-bm-no-matches kt-muted" hidden>No bookings match these filters.</p>`
+      : `<div class="kt-lz-no-bookings"><span aria-hidden="true">⛰</span><h3>Your trail adventures start here</h3><p>Browse available hikes and send a booking request.</p><a href="trails.html" class="btn btn-primary">Find a hike</a></div>`}
     </section>`;
   }
+  function filterMyBookings() {
+    const list = $("#kt-bm-list");
+    if (!list) return;
+    const when = $("#kt-bm-when")?.value || "all";
+    const status = $("#kt-bm-status")?.value || "all";
+    const search = ($("#kt-bm-search")?.value || "").trim().toLowerCase();
+    let visible = 0;
+    $$('[data-kt-bm-card]', list).forEach((card) => {
+      const match = (when === "all" || card.dataset.when === when)
+        && (status === "all" || card.dataset.status === status)
+        && (!search || card.dataset.search.includes(search));
+      card.hidden = !match;
+      if (match) visible++;
+    });
+    const count = $("#kt-bm-count");
+    if (count) count.textContent = `${visible} booking${visible === 1 ? "" : "s"} shown`;
+    const noMatches = $("#kt-bm-no-matches");
+    if (noMatches) noMatches.hidden = visible > 0;
+  }
+  function viewHikerBooking(bookingId) {
+    const u = me();
+    if (!u || u.role !== "hiker") return;
+    const b = state.bookings.find((record) => record.id === Number(bookingId) && record.userId === u.id);
+    if (!b) return toast("This booking does not belong to your account.", true);
+    const h = hike(b.hikeId);
+    const t = trail(h?.trailId);
+    const stage = bookingStage(b);
+    const facts = [
+      ["Trail", t?.name || "Removed trail"],
+      ["Date", fullDate(h?.date)],
+      ["Location", t?.location || "Not available"],
+      ["Meeting point", t?.meeting || "To be announced"],
+      ["Guide", who(h?.guideId)?.name || "To be assigned"],
+      ["Contact phone", b.phone || "Not provided"],
+      ["Emergency contact", b.emergencyName || "Not provided"],
+      ["Emergency phone", b.emergencyPhone || "Not provided"],
+    ];
+    const participants = (b.participants || []).map((p, index) => `<div class="kt-booking-participant"><strong>${index + 1}. ${esc(p.name)}</strong><small>Attendance: ${esc(p.attendance || "Pending")} · Completion: ${esc(p.completion || "Pending")}</small></div>`).join("");
+    const content = `<div class="kt-booking-detail kt-bm-booking-modal"><div class="kt-booking-detail-head"><div><p class="eyebrow">Your booking record</p><h2 id="kt-booking-detail-title">Booking #${esc(b.id)}</h2><p>${esc(t?.name || "Trail unavailable")}</p></div><span class="kt-lz-status kt-lz-status-${stage.key}">${esc(stage.label)}</span></div>
+      <section class="kt-booking-detail-section"><h3>Hike details</h3><dl class="kt-booking-facts">${facts.map(([name, val]) => `<div class="kt-booking-fact"><dt>${esc(name)}</dt><dd>${esc(val)}</dd></div>`).join("")}</dl></section>
+      <section class="kt-booking-detail-section"><h3>Participants (${(b.participants || []).length})</h3><div class="kt-booking-participants">${participants || "No participant details recorded."}</div></section>
+      <section class="kt-booking-detail-section"><h3>Guide record</h3><p>${stage.key === "completed" ? "Your participation has been verified and is counted in your statistics." : "Only the assigned guide can verify attendance and completion."}</p><p><strong>Guide notes:</strong> ${esc(b.guideNotes || "No notes yet")}</p></section>
+      <div class="kt-booking-detail-actions">${b.status === "confirmed" && t ? btn("view-map", "View Map", b.id, "btn btn-primary") : ""}<button type="button" class="btn btn-outline" data-close-booking>Close</button></div>
+    </div>`;
+    modal(content, "kt-booking-dialog");
+    $("[data-close-booking]", $("#kt-modal"))?.addEventListener("click", () => $("#kt-modal").close());
+  }
+  function viewCustomerHistory(customerId) {
+    const u = me();
+    if (!u || u.role !== "admin") return;
+    const customer = who(Number(customerId));
+    if (!customer || customer.role !== "hiker") return;
+    const totals = hikerTotals(customer);
+    const bookings = totals.bookings.slice().sort((a, b) => (b.created || "").localeCompare(a.created || "") || b.id - a.id);
+    const content = `<div class="kt-booking-detail kt-bm-customer-modal"><div class="kt-booking-detail-head"><div><p class="eyebrow">Customer account</p><h2 id="kt-booking-detail-title">${esc(customer.name)}</h2><p>${esc(customer.email)}</p></div><span class="tag">Hiker</span></div>
+      <section class="kt-booking-detail-section"><h3>Profile</h3><dl class="kt-booking-facts"><div class="kt-booking-fact"><dt>Hiking level</dt><dd>${esc(customer.level || "Not set")}</dd></div><div class="kt-booking-fact"><dt>Phone</dt><dd>${esc(customer.phone || "Not provided")}</dd></div><div class="kt-booking-fact"><dt>Bio</dt><dd>${esc(customer.bio || "Not provided")}</dd></div></dl></section>
+      <section class="kt-booking-detail-section"><h3>Verified hiking statistics</h3>${stats([["Bookings", bookings.length], ["Completed hikes", totals.records.length], ["Distance", totals.distance + " km"], ["Achievements", accomplishments(customer).filter((a) => a.earned).length]])}</section>
+      <section class="kt-booking-detail-section"><h3>Booking history</h3><div class="kt-bm-admin-bookings">${bookings.map((b) => `<div class="kt-item"><div><strong>#${esc(b.id)} · ${esc(hikeTitle(hike(b.hikeId)))}</strong><p>${esc(fullDate(hike(b.hikeId)?.date))} · ${esc(bookingStage(b).label)}</p></div>${btn("view-booking", "Review", b.id, "btn btn-secondary")}</div>`).join("") || `<p class="kt-muted">No bookings recorded for this customer.</p>`}</div></section>
+      <div class="kt-booking-detail-actions"><button type="button" class="btn btn-outline" data-close-booking>Close</button></div></div>`;
+    modal(content, "kt-booking-dialog");
+    $("[data-close-booking]", $("#kt-modal"))?.addEventListener("click", () => $("#kt-modal").close());
+  }
   function myProfile(u) {
-    return panel(
-      "My Profile",
-      `<form id="profile-form" class="kt-profile-form"><div class="kt-profile-top">${u.photo ? `<img class="kt-avatar" src="${esc(u.photo)}" alt="Your profile picture">` : '<div class="kt-avatar kt-avatar-fallback">⛰</div>'}<label class="kt-field">Profile picture (up to 350 KB)<input id="profile-photo" accept="image/png,image/jpeg,image/webp" type="file"></label></div><div class="kt-fields">${field("Full name", "name", "text", u.name, 'required minlength="2" maxlength="80"')}${field("Contact phone", "phone", "tel", u.phone || "")}${select(
-        "Hiking level",
-        "level",
-        [
-          ["Beginner", "Beginner"],
-          ["Intermediate", "Intermediate"],
-          ["Experienced", "Experienced"],
-        ],
-        u.level,
-      )}<label class="kt-field kt-full">Bio<textarea name="bio" maxlength="300" rows="3">${esc(u.bio)}</textarea></label></div><button class="btn btn-primary" type="submit">Save Profile</button></form>`,
-    );
+    const totals = hikerTotals(u);
+    return `<section class="kt-panel kt-bm-module kt-bm-profile-panel">
+      <div class="kt-lz-panel-top"><p class="kt-lz-overline">Your trail identity</p><h2>My Profile</h2><p class="kt-muted">Keep your details up to date for future hiking requests.</p></div>
+      ${stats([["Booking requests", totals.bookings.length], ["Verified hikes", totals.records.length], ["Distance hiked", totals.distance + " km"], ["Badges earned", accomplishments(u).filter((a) => a.earned).length]])}
+      <div class="kt-bm-profile-links"><a href="dashboard.html?tab=bookings">View My Bookings →</a><a href="dashboard.html?tab=history">Hiking History →</a><a href="dashboard.html?tab=achievements">My Achievements →</a></div>
+      <form id="profile-form" class="kt-profile-form"><div class="kt-profile-top">${u.photo ? `<img class="kt-avatar" src="${esc(u.photo)}" alt="Your profile picture">` : '<div class="kt-avatar kt-avatar-fallback">⛰</div>'}<label class="kt-field">Profile picture (up to 350 KB)<input id="profile-photo" accept="image/png,image/jpeg,image/webp" type="file"></label></div>
+      <div class="kt-fields">${field("Full name", "name", "text", u.name, 'required minlength="2" maxlength="80" autocomplete="name"')}${field("Contact phone", "phone", "tel", u.phone || "", 'maxlength="30" autocomplete="tel"')}${select("Hiking level", "level", [["Beginner", "Beginner"], ["Intermediate", "Intermediate"], ["Experienced", "Experienced"]], u.level || "Beginner")}<div class="kt-field"><span>Account email</span><strong>${esc(u.email)}</strong><small class="kt-muted">Email is managed by your demo account.</small></div><label class="kt-field kt-full">Bio<textarea name="bio" maxlength="300" rows="3">${esc(u.bio)}</textarea></label></div><button class="btn btn-primary" type="submit">Save Profile</button></form>
+      <p class="kt-muted kt-bm-note">Your profile updates do not rewrite names or contact details already recorded on submitted bookings.</p>
+    </section>`;
   }
   function feedPosts() {
     return (
@@ -1120,48 +1209,42 @@
   }
   function hikerPane(tab, u) {
     if (tab === "account") return accountPane(u);
-    const done = completed(u),
-      totalDistance = done.reduce(
-        (sum, x) => sum + (trail(x.h.trailId)?.distance || 0),
-        0,
-      ),
-      totalElev = done.reduce(
-        (sum, x) => sum + (trail(x.h.trailId)?.elevation || 0),
-        0,
-      );
+    const progress = hikerTotals(u);
+    const done = progress.records.slice().sort((a, b) => (b.h?.date || "").localeCompare(a.h?.date || ""));
     if (tab === "bookings") return myBookings(u);
     if (tab === "profile") return myProfile(u);
-    if (tab === "history")
-      return panel(
-        "Hiking History & Statistics",
-        stats([
-          ["Verified completions", done.length],
-          ["Distance", totalDistance + " km"],
-          ["Elevation", totalElev + " m"],
-        ]) +
-          done
-            .map(
-              (x) =>
-                `<div class="kt-item"><strong>${esc(hikeTitle(x.h))}</strong><span>${fullDate(x.h.date)} · ${esc(x.p.name)} · Guide verified</span></div>`,
-            )
-            .join("") +
-          (done.length ? "" : empty("No guide-verified hikes yet.")),
-      );
-    if (tab === "achievements")
-      return panel(
-        "Achievements & Progress",
-        `<p>${done.length} verified completions</p>${accomplishments(u)
-          .map(
-            (a) =>
-              `<div class="kt-item"><div><strong>${a.earned ? "🏅" : "🔒"} ${esc(a.name)}</strong><p>${esc(a.description)}</p><progress value="${Math.min(done.length, a.count)}" max="${a.count}"></progress> ${Math.min(done.length, a.count)}/${a.count}</div>${badge(a.earned ? "Unlocked" : "Locked")}</div>`,
-          )
-          .join("")}`,
-      );
+    if (tab === "history") {
+      const awaiting = progress.bookings.filter((b) => bookingStage(b).key === "past");
+      return `<section class="kt-panel kt-bm-module kt-bm-history-panel"><div class="kt-lz-panel-top"><p class="kt-lz-overline">Your hiking journey</p><h2>Hiking History & Statistics</h2><p class="kt-muted">Statistics use only completed hikes recorded by your assigned Guide.</p></div>
+        ${stats([["Verified hikes", done.length], ["Total distance", progress.distance + " km"], ["Unique trails", progress.trails], ["Highest trail elevation", progress.highest + " m"]])}
+        <p class="kt-bm-note kt-muted">Trail elevation is the listed altitude, not cumulative elevation gained. Pending bookings do not earn completion credit.</p>
+        <div class="kt-lz-upcoming-head"><h3>Verified hiking history</h3><a href="dashboard.html?tab=bookings">View booking records →</a></div>
+        ${done.length ? `<div class="kt-bm-history-list">${done.map(({ h, b }) => {
+          const t = trail(h.trailId);
+          return `<article class="kt-bm-history-card"><div><span class="kt-lz-small-label">${esc(fullDate(h.date))} · Booking #${esc(b.id)}</span><h3>${esc(hikeTitle(h))}</h3><p>${esc(t?.location || "Location unavailable")} · ${esc(t?.difficulty || "Trail difficulty unavailable")}</p><small>${esc(who(h.guideId)?.name || "Guide")} verified completion</small></div><div class="kt-bm-history-side"><strong>${esc(t?.distance ?? 0)} km</strong><span class="kt-lz-status kt-lz-status-completed">Verified</span></div></article>`;
+        }).join("")}</div>` : `<div class="kt-lz-no-bookings"><span aria-hidden="true">🥾</span><h3>No verified hikes yet</h3><p>Your hiking history will appear after a Guide records you as present and completed.</p><a href="trails.html" class="btn btn-primary">Find a hike</a></div>`}
+        ${awaiting.length ? `<p class="kt-bm-note kt-muted">${awaiting.length} past booking${awaiting.length === 1 ? " is" : "s are"} still awaiting a guide record. These are not counted as completed hikes.</p>` : ""}
+      </section>`;
+    }
+    if (tab === "achievements") {
+      const badges = accomplishments(u).slice().sort((a, b) => a.count - b.count);
+      const earned = badges.filter((a) => a.earned);
+      const nextBadge = badges.find((a) => !a.earned);
+      return `<section class="kt-panel kt-bm-module kt-bm-achievements-panel"><div class="kt-lz-panel-top"><p class="kt-lz-overline">Milestones on the trail</p><h2>Achievements & Progress</h2><p class="kt-muted">Earn achievements automatically as your Guide verifies completed hikes.</p></div>
+        ${stats([["Verified hikes", done.length], ["Badges unlocked", earned.length], ["Total badges", badges.length]])}
+        <div class="kt-bm-milestone">${nextBadge ? `<strong>Next milestone: ${esc(nextBadge.name)}</strong><span>${Math.max(0, nextBadge.count - done.length)} more verified hike${nextBadge.count - done.length === 1 ? "" : "s"} to unlock</span>` : badges.length ? `<strong>All current badges unlocked!</strong><span>Keep exploring new Kalinga Trails hikes.</span>` : `<strong>Achievements will appear here</strong><span>No badges have been configured yet.</span>`}</div>
+        <div class="kt-bm-badge-grid">${badges.map((a) => {
+          const threshold = Math.max(1, Number(a.count) || 1);
+          const current = Math.min(done.length, threshold);
+          return `<article class="kt-bm-badge-card ${a.earned ? "is-earned" : ""}"><div class="kt-bm-badge-icon" aria-hidden="true">${a.earned ? "🏅" : "🔒"}</div><div><h3>${esc(a.name)}</h3><p>${esc(a.description)}</p><span class="kt-lz-status ${a.earned ? "kt-lz-status-completed" : ""}">${a.earned ? "Unlocked" : "Locked"}</span></div><div class="kt-bm-badge-progress"><progress value="${current}" max="${threshold}" aria-label="${esc(a.name)} progress"></progress><span>${current} / ${threshold} verified hikes</span></div></article>`;
+        }).join("")}</div><p class="kt-bm-note kt-muted">Only verified completions count toward these badges. Booking a hike alone does not unlock one.</p>
+      </section>`;
+    }
     if (tab === "friends") return communityPane(u);
     if (tab === "notifications") return notificationsPane(u);
     const upcoming = state.bookings
       .filter(
-        (b) => b.userId === u.id && ["pending", "confirmed"].includes(b.status),
+        (b) => b.userId === u.id && bookingStage(b).when === "upcoming",
       )
       .slice()
       .sort((first, second) =>
@@ -1365,7 +1448,7 @@
                 .reverse()
                 .map(
                   (b) =>
-                    `<article class="kt-item kt-booking-row"><div class="kt-booking-summary"><strong>#${b.id} · ${esc(hikeTitle(hike(b.hikeId)))}</strong><p>${esc(who(b.userId)?.name || "Unknown customer")} · ${b.participants.length} participant(s) · ${badge(b.status)}</p><p>${fullDate(hike(b.hikeId)?.date)}</p></div><div class="kt-actions">${btn("view-booking", "View Details", b.id, "btn btn-secondary")}${b.status === "pending" ? btn("confirm-booking", "Confirm", b.id, "btn btn-primary") : ""}${["pending", "confirmed"].includes(b.status) ? btn("reject-booking", "Cancel", b.id) : ""}</div></article>`,
+                    `<article class="kt-item kt-booking-row"><div class="kt-booking-summary"><strong>#${b.id} · ${esc(hikeTitle(hike(b.hikeId)))}</strong><p>${esc(who(b.userId)?.name || "Unknown customer")} · ${b.participants.length} participant(s) · ${badge(b.status)}</p><p>${fullDate(hike(b.hikeId)?.date)}</p></div><div class="kt-actions">${btn("view-booking", "View Details", b.id, "btn btn-secondary")}${b.status === "pending" ? btn("confirm-booking", "Confirm", b.id, "btn btn-primary") : ""}${["pending", "confirmed"].includes(b.status) && bookingStage(b).key !== "completed" ? btn("reject-booking", "Cancel", b.id) : ""}</div></article>`,
                 )
                 .join("")
             : empty("No booking requests.")
@@ -1407,7 +1490,7 @@
             .filter((x) => x.role === (tab === "customers" ? "hiker" : "guide"))
             .map(
               (x) =>
-                `<div class="kt-item"><div><strong>${esc(x.name)}</strong><p>${esc(x.email)} · ${tab === "customers" ? state.bookings.filter((b) => b.userId === x.id).length + " bookings" : state.hikes.filter((h) => h.guideId === x.id).length + " assigned hikes"}</p></div>${tab === "guides" ? `<div class="kt-actions">${btn("edit-guide", "Edit", x.id)}${btn("reset-guide-password", "Set Password", x.id)}${btn("delete-guide", "Remove", x.id)}</div>` : `<div class="kt-actions">${btn("customer-history", "Booking history", x.id)}${btn("delete-customer", "Remove", x.id)}</div>`}</div>`,
+                `<div class="kt-item"><div><strong>${esc(x.name)}</strong><p>${esc(x.email)} · ${tab === "customers" ? state.bookings.filter((b) => b.userId === x.id).length + " bookings" : state.hikes.filter((h) => h.guideId === x.id).length + " assigned hikes"}</p></div>${tab === "guides" ? `<div class="kt-actions">${btn("edit-guide", "Edit", x.id)}${btn("reset-guide-password", "Set Password", x.id)}${btn("delete-guide", "Remove", x.id)}</div>` : `<div class="kt-actions">${btn("customer-history", "Profile & History", x.id)}${btn("delete-customer", "Remove", x.id)}</div>`}</div>`,
             )
             .join("") || empty("No records yet.")
         }`,
@@ -1655,8 +1738,13 @@
       f.reset();
       toast("Account password updated.");
     });
+    ["kt-bm-when", "kt-bm-status", "kt-bm-search"].forEach((id) => {
+      const element = $("#" + id);
+      if (element) element.addEventListener(id === "kt-bm-search" ? "input" : "change", filterMyBookings);
+    });
     on("profile-form", (f, v) => {
       const u = me();
+      if (v.name.trim().length < 2) return toast("Please enter a valid full name.", true);
       u.name = v.name.trim();
       u.phone = v.phone.trim();
       u.level = v.level;
@@ -1820,7 +1908,7 @@
     const actions =
       b.status === "pending"
         ? `${btn("confirm-booking", "Confirm Booking", b.id, "btn btn-primary")}${btn("reject-booking", "Cancel Booking", b.id, "btn btn-secondary")}`
-        : b.status === "confirmed"
+        : b.status === "confirmed" && bookingStage(b).key !== "completed"
           ? btn("reject-booking", "Cancel Booking", b.id, "btn btn-secondary")
           : "";
     const created = b.created ? new Date(b.created) : null;
@@ -1935,6 +2023,10 @@
       return;
     }
     if (!u) return (location.href = "auth.html");
+    if (name === "hiker-booking-details") {
+      viewHikerBooking(id);
+      return;
+    }
     if (name === "view-booking") {
       viewBookingDetails(id);
       return;
@@ -1949,8 +2041,12 @@
       b.userId === u.id &&
       ["pending", "confirmed"].includes(b.status)
     ) {
+      if (hike(b.hikeId)?.date < today() || bookingStage(b).key === "completed")
+        return toast("Past or guide-verified hikes cannot be cancelled by a Hiker.", true);
       if (!confirm("Cancel this booking?")) return;
       b.status = "cancelled";
+      const detailDialog = $("#kt-modal.kt-booking-dialog");
+      if (detailDialog?.open) detailDialog.close();
       notice(u.id, `Booking #${b.id} was cancelled.`);
       state.users
         .filter((x) => x.role === "admin")
@@ -1975,6 +2071,8 @@
         !["pending", "confirmed"].includes(b.status)
       )
         return;
+      if (name === "reject-booking" && bookingStage(b).key === "completed")
+        return toast("A verified hike must remain in the participant's history.", true);
       if (
         name === "reject-booking" &&
         !confirm(`Cancel booking #${b.id}? The customer will be notified.`)
@@ -2205,17 +2303,7 @@
             t.difficulty = difficulty;
         }
       }
-      if (name === "customer-history") {
-        const customer = who(Number(id));
-        if (customer?.role === "hiker") {
-          const records =
-            state.bookings
-              .filter((b) => b.userId === customer.id)
-              .map((b) => `${hikeTitle(hike(b.hikeId))} — ${b.status}`)
-              .join("\n") || "No bookings";
-          alert(`${customer.name}\n${records}`);
-        }
-      }
+      if (name === "customer-history") viewCustomerHistory(id);
       if (name === "delete-customer") {
         const customer = who(Number(id));
         if (customer?.role === "hiker") {
