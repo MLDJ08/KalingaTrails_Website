@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Kalinga Trails | Explore. Connect. Progress.</title>
     <link rel="stylesheet" href="style.css" />
-    <link rel="stylesheet" href="enhancements.css" />
+    
   </head>
   <body>
     <header class="site-header">
@@ -91,11 +91,10 @@
       <section class="hero">
         <div class="container hero-content">
           <p class="eyebrow">Adventure • Community • Progress</p>
-          <h1>Sa Bawat Lakad, Kalinga ang Kasama</h1>
+          <h1 id="kt-headline">Sa Bawat Lakad, Kalinga ang Kasama!</h1>
           <p>
-            Kalinga Trails brings hikers together through organized and guided
-            hiking experiences, meaningful outdoor adventures, and a supportive
-            hiking community.
+            Find an organized hike, request a place, and explore with a guide.
+            Every verified Kalinga Trails adventure becomes part of your hiking journey.
           </p>
           <div class="hero-buttons">
             <a class="btn btn-primary" href="trails.html">Explore Hikes</a>
@@ -117,7 +116,7 @@
             </p>
           </div>
 
-          <div class="cards">
+          <div class="cards" id="featured-hikes" aria-live="polite">
             <article class="card">
               <img
                 class="card-image"
@@ -193,6 +192,14 @@
         </div>
       </section>
 
+      <section class="company-values" aria-label="How Kalinga Trails works">
+        <div class="container company-values-grid">
+          <div><strong>01 · Find your hike</strong><p>Compare difficulty, duration, schedules, and available slots.</p></div>
+          <div><strong>02 · Request a booking</strong><p>Submit participants and contact details; requests await administrator approval.</p></div>
+          <div><strong>03 · Hike with a guide</strong><p>Guides manage check-in and verify completion after each organized activity.</p></div>
+        </div>
+      </section>
+
       <section class="section section-light">
         <div class="container split">
           <img
@@ -262,6 +269,7 @@
               Discover trails, meet fellow hikers, and start building your
               Kalinga Trails journey.
             </p>
+            <p class="demo-note">Classroom demonstration: bookings and notifications are stored in this browser, not sent to a real business. No payments are collected.</p>
             <a class="btn btn-secondary" href="trails.html"
               >Explore Trails & Hikes</a
             >

@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Contact Us | Kalinga Trails</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="enhancements.css">
+  <title>Contact Us | Kalinga Trails</title><link rel="stylesheet" href="style.css">
   </head>
   <body>
     <header class="site-header"><nav class="navbar container">
@@ -58,30 +58,81 @@
 </nav></header>
 
 <main>
-<section class="page-hero"><div class="container"><p class="eyebrow">Get in Touch</p><h1>Contact Kalinga Trails</h1><p>Have a question about booking, hikes, difficulty levels, or what to bring? Send us an inquiry.</p></div></section>
+  <section class="page-hero">
+    <div class="container">
+      <p class="eyebrow">Customer Support</p>
+      <h1>Contact Kalinga Trails</h1>
+      <p>Learn how our guided-hike booking process works, review policies, and send a demonstration inquiry.</p>
+    </div>
+  </section>
+
   <section class="section">
     <div class="container details-grid">
       <div>
-      <h2>Business Information</h2>
-      <p style="margin-top:12px;">Kalinga Trails</p>
-      <p>Email: hello@kalingatrails.example</p>
-      <p>Phone: +63 900 123 4567</p>
-      <p>Operating Hours: Monday–Saturday, 8:00 AM–6:00 PM</p>
-        <div class="faq">
-        <h2>Frequently Asked Questions</h2>
-        <div class="faq-item"><strong>How do I book a hike?</strong><p>Choose an available hike and use the booking option. You can complete the local demo booking workflow from the Trails & Hikes page.</p></div>
-        <div class="faq-item"><strong>What should I bring?</strong><p>Bring water, snacks, comfortable hiking shoes, sun protection, and weather-appropriate gear.</p></div>
-        <div class="faq-item"><strong>How are completed hikes recorded?</strong><p>Participation and completion are verified through the Kalinga Trails booking and guide-management workflow.</p><div class="faq-item"><strong>Can I cancel a booking?</strong><p>Yes. Open My Bookings in your hiker dashboard to cancel a pending or confirmed request.</p></div><div class="faq-item"><strong>What do difficulty levels mean?</strong><p>Easy is beginner-friendly, Moderate needs some endurance, and Challenging is suitable for experienced hikers.</p></div></div>
+        <h2>Company Information</h2>
+        <p class="section-intro"><strong>Kalinga Trails</strong> is a fictional guided-hiking business created for a web-development project. Our concept emphasizes organized adventures, supportive guides, safety awareness, and a welcoming hiking community.</p>
+        <dl class="company-contact-details">
+          <div><dt>Sample email</dt><dd>hello@kalingatrails.example</dd></div>
+          <div><dt>Sample phone</dt><dd>+63 900 123 4567</dd></div>
+          <div><dt>Proposed hours</dt><dd>Monday–Saturday, 8:00 AM–6:00 PM (Philippine time)</dd></div>
+          <div><dt>Service area</dt><dd>Guided outdoor experiences in selected Philippine hiking locations</dd></div>
+        </dl>
+        <p class="demo-disclaimer">The contact details and business hours above are illustrative. The email and telephone number are not connected to customer support.</p>
+
+        <div class="faq" id="faq">
+          <h2>Frequently Asked Questions</h2>
+          <details class="faq-entry" open>
+            <summary>How do I book a hike?</summary>
+            <p>Open <a href="trails.html">Trails &amp; Hikes</a>, choose an available activity, and submit the booking form. Your request stays pending until the administrator confirms it.</p>
+          </details>
+          <details class="faq-entry">
+            <summary>Does submitting a request guarantee a slot?</summary>
+            <p>No. The administrator must review the request and confirm the booking. Available slots and schedules are demonstration data in this browser.</p>
+          </details>
+          <details class="faq-entry">
+            <summary>Can I cancel a booking?</summary>
+            <p>Yes. In this prototype, you can cancel a pending or confirmed request from My Bookings in your hiker dashboard. Real-world cancellation deadlines, refunds, and payment policies have not yet been implemented.</p>
+          </details>
+          <details class="faq-entry">
+            <summary>What should I bring?</summary>
+            <p>Check your selected hike page for trail-specific guidance. Common essentials include water, snacks, suitable hiking shoes, rain protection, and any personal items you may need.</p>
+          </details>
+          <details class="faq-entry">
+            <summary>What do the difficulty levels mean?</summary>
+            <p>Easy is designed for beginners, Moderate involves more endurance, and Challenging is intended for experienced hikers. Review distance, duration, elevation, and current conditions before choosing.</p>
+          </details>
+          <details class="faq-entry">
+            <summary>How do hiking achievements work?</summary>
+            <p>After a booked activity, the assigned guide checks attendance and records completion. Eligible verified completions update the customer's hiking history and achievements.</p>
+          </details>
+        </div>
       </div>
-      <div class="form-box">
-      <h2>Send an Inquiry</h2><p class="kt-muted">Demo: submissions are saved only in this browser and are not emailed.</p>
-        <form id="contact-inquiry">
-        <div class="form-group"><label for="name">Full Name</label><input id="name" name="name" type="text" required minlength="2" maxlength="80" placeholder="Your name"></div>
-        <div class="form-group"><label for="email">Email Address</label><input id="email" name="email" type="email" required placeholder="you@example.com"></div>
-        <div class="form-group"><label for="topic">Topic</label><select id="topic" name="topic"><option>General Inquiry</option><option>Hike Information</option><option>Booking Question</option><option>Other</option></select></div>
-        <div class="form-group"><label for="message">Message</label><textarea id="message" name="message" required minlength="10" maxlength="1000" placeholder="Write your message here"></textarea></div>
-        <button class="btn btn-primary" type="submit">Send Inquiry</button>
-        </form>
+
+      <div>
+        <div class="form-box">
+          <h2>Send an Inquiry</h2>
+          <p class="demo-disclaimer">Demo only: your inquiry is saved in this browser. It is not emailed or delivered to a business. Do not enter real personal or medical information.</p>
+          <form id="contact-inquiry">
+            <div class="form-group"><label for="name">Full Name</label><input id="name" name="name" type="text" required minlength="2" maxlength="80" autocomplete="name" placeholder="Example: Juan Dela Cruz"></div>
+            <div class="form-group"><label for="email">Email Address</label><input id="email" name="email" type="email" required maxlength="120" autocomplete="email" placeholder="you@example.com"></div>
+            <div class="form-group"><label for="topic">Inquiry Topic</label><select id="topic" name="topic"><option>General Inquiry</option><option>Hike Information</option><option>Booking Question</option><option>Safety and Preparation</option><option>Other</option></select></div>
+            <div class="form-group"><label for="message">Message</label><textarea id="message" name="message" required minlength="10" maxlength="1000" placeholder="What would you like to ask?"></textarea></div>
+            <button class="btn btn-primary" type="submit">Save Demo Inquiry</button>
+            <p class="form-feedback" id="contact-feedback" role="status" aria-live="polite"></p>
+          </form>
+        </div>
+        <div class="booking-policy-panel" id="booking-policies">
+          <h2>Booking &amp; Service Policies</h2>
+          <p class="demo-disclaimer">Proposed business rules for the fictional company. Only the actions described as available in the prototype are implemented.</p>
+          <h3>Requests &amp; confirmation</h3>
+          <p>A booking request does not equal a confirmed reservation. An administrator reviews participant and scheduling information before confirmation.</p>
+          <h3>Cancellations &amp; changes</h3>
+          <p>Hikers can cancel pending and confirmed demo bookings in their dashboards. For a future real service, the team would publish deadlines, refund rules, and rescheduling procedures before collecting payment.</p>
+          <h3>Package inclusions &amp; payment</h3>
+          <p>Before accepting actual customers, each hike listing should specify the per-person price, inclusions, exclusions, transport, permits, and payment instructions. This prototype does not charge customers or process refunds.</p>
+          <h3>Safety &amp; weather</h3>
+          <p>Participants must review difficulty, gear guidance, and the meeting location. A future operating policy should allow the organizer to postpone or cancel unsafe hikes and contact affected customers.</p>
+        </div>
       </div>
     </div>
   </section>
