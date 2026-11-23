@@ -3,6 +3,11 @@
 (() => {
   "use strict";
   const KEY = "kalinga-trails-demo-v3";
+  // Classroom-only starter accounts. They are not production credentials.
+  const demoPasswordHashes = {
+    "guide@kalinga.demo": "fb031472e789a99cb3b7c489bdf2f345bb8ab19a2fa37b47bf393c469b9d6b9b",
+    "admin@kalinga.demo": "98c70b2095b654152f2af418b6d027af845d1b7fa7d6f55d59b0088daf11f1de",
+  };
   const $ = (s, root = document) => root.querySelector(s);
   const $$ = (s, root = document) => [...root.querySelectorAll(s)];
   const esc = (v) =>
@@ -33,6 +38,7 @@
           name: "Alex Rivera",
           email: "guide@kalinga.demo",
           role: "guide",
+          pass: demoPasswordHashes["guide@kalinga.demo"],
           bio: "Local hiking guide",
           level: "Experienced",
         },
@@ -41,6 +47,7 @@
           name: "Kalinga Administrator",
           email: "admin@kalinga.demo",
           role: "admin",
+          pass: demoPasswordHashes["admin@kalinga.demo"],
           bio: "",
           level: "",
         },
@@ -158,6 +165,17 @@
   } catch {
     state = initial();
   }
+  // Preserve previously registered users and bookings when this version is opened.
+  // Only the two unchanged original demo accounts are upgraded with demo logins.
+  for (const user of state.users) {
+    if (
+      !user.pass &&
+      ((user.id === 1 && user.role === "guide" && user.email === "guide@kalinga.demo") ||
+        (user.id === 2 && user.role === "admin" && user.email === "admin@kalinga.demo"))
+    ) {
+      user.pass = demoPasswordHashes[user.email];
+    }
+  }
   function save() {
     try {
       localStorage.setItem(KEY, JSON.stringify(state));
@@ -266,18 +284,23 @@
     if (!wrap) return;
     const signing =
       new URLSearchParams(location.search).get("mode") === "signup";
-    wrap.innerHTML = `<div class="kt-panel kt-auth"><h2>${signing ? "Create a hiker account" : "Welcome back"}</h2><p class="kt-muted">Browser-only classroom demonstration. Do not enter real passwords or medical details.</p><form id="auth-form"><div class="kt-fields">${signing ? field("Full name", "name", "text", "", 'required minlength="2" maxlength="80"') : ""}${field("Email", "email", "email", "", "required")}${field("Password", "password", "password", "", 'required minlength="6" maxlength="100" autocomplete="' + (signing ? "new-password" : "current-password") + '"')}</div><label class="kt-show-password"><input type="checkbox" id="kt-show-password"> Show password</label><button class="btn btn-primary" type="submit">${signing ? "Sign Up" : "Log In"}</button></form><p style="margin-top:16px">${signing ? "Already registered?" : "New to Kalinga Trails?"} <a class="kt-link" href="auth.html${signing ? "" : "?mode=signup"}">${signing ? "Log in" : "Create an account"}</a></p><hr class="kt-separator"><h3>Local demo access</h3><p class="kt-muted">These shortcuts only simulate roles in this browser. They are not secure logins.</p><div class="kt-actions">${btn("demo-role", "Preview Guide Dashboard", "guide")}${btn("demo-role", "Preview Admin Dashboard", "admin")}</div></div>`;
+    wrap.innerHTML = `<div class="kt-panel kt-auth"><h2>${signing ? "Create a hiker account" : "Welcome back"}</h2><p class="kt-muted">Browser-only classroom demonstration. Do not enter real passwords or medical details.</p><form id="auth-form"><div class="kt-fields">${signing ? field("Full name", "name", "text", "", 'required minlength="2" maxlength="80" autocomplete="name"') : ""}${field("Email", "email", "email", "", 'required maxlength="254" autocomplete="email"')}${field("Password", "password", "password", "", 'required minlength="6" maxlength="100" autocomplete="' + (signing ? "new-password" : "current-password") + '"')}${signing ? field("Confirm password", "confirmPassword", "password", "", 'required minlength="6" maxlength="100" autocomplete="new-password"') : ""}</div><label class="kt-show-password"><input type="checkbox" id="kt-show-password"> Show password</label><button class="btn btn-primary" type="submit">${signing ? "Sign Up" : "Log In"}</button></form>${signing ? '<p class="kt-muted">New accounts are registered as <strong>Hikers</strong>. Guide accounts are added by an Administrator.</p>' : ''}<p style="margin-top:16px">${signing ? "Already registered?" : "New to Kalinga Trails?"} <a class="kt-link" href="auth.html${signing ? "" : "?mode=signup"}">${signing ? "Log in" : "Create an account"}</a></p><hr class="kt-separator"><h3>Local demo access</h3><p class="kt-muted">Demo logins: Guide <strong>guide@kalinga.demo</strong> / <strong>GuideDemo2026!</strong>; Administrator <strong>admin@kalinga.demo</strong> / <strong>AdminDemo2026!</strong>. These accounts are for local testing only.</p><p class="kt-muted">The following shortcuts still preview roles without password checks, as in the original prototype.</p><div class="kt-actions">${btn("demo-role", "Preview Guide Dashboard", "guide")}${btn("demo-role", "Preview Admin Dashboard", "admin")}</div></div>`;
     $("#kt-show-password")?.addEventListener("change", (e) => {
-      const input = $('#auth-form [name="password"]');
-      if (input) input.type = e.target.checked ? "text" : "password";
+      $$('#auth-form input[type="password"], #auth-form input[name="password"], #auth-form input[name="confirmPassword"]').forEach((input) => {
+        input.type = e.target.checked ? "text" : "password";
+      });
     });
     $("#auth-form").addEventListener("submit", async (e) => {
       e.preventDefault();
+      if (!e.target.reportValidity()) return;
       const v = formValues(e.target),
         email = v.email.trim().toLowerCase();
-      if (!e.target.reportValidity()) return;
       let u = state.users.find((x) => x.email === email);
       if (signing) {
+        if (v.name.trim().length < 2)
+          return toast("Please enter your full name.", true);
+        if (v.password !== v.confirmPassword)
+          return toast("Passwords do not match.", true);
         if (u) return toast("An account with that email exists.", true);
         u = {
           id: next(),
@@ -292,16 +315,13 @@
         state.users.push(u);
         notice(u.id, "Welcome to Kalinga Trails!");
       } else {
-        if (
-          !u ||
-          u.role !== "hiker" ||
-          u.pass !== (await digest(v.password + email))
-        )
+        if (!u || !u.pass || u.pass !== (await digest(v.password + email)))
           return toast("Email or password is incorrect.", true);
       }
       state.session = u.id;
       save();
-      location.href = safeNext();
+      // A booking continuation is available to hikers only.
+      location.href = u.role === "hiker" ? safeNext() : "dashboard.html";
     });
   }
   function safeNext() {
@@ -1044,6 +1064,7 @@
     </section>`;
   }
   function hikerPane(tab, u) {
+    if (tab === "account") return accountPane(u);
     const done = completed(u),
       totalDistance = done.reduce(
         (sum, x) => sum + (trail(x.h.trailId)?.distance || 0),
@@ -1123,6 +1144,7 @@
     </section>`;
   }
   function guidePane(tab, u) {
+    if (tab === "account") return accountPane(u);
     const assigned = state.hikes.filter((h) => h.guideId === u.id);
     const bookings = state.bookings.filter(
       (b) =>
@@ -1253,6 +1275,7 @@
     return panel(titles[tab], nav + details + form + controls);
   }
   function adminPane(tab, u) {
+    if (tab === "account") return accountPane(u);
     const bs = state.bookings;
     const allParticipants = bs
       .filter((b) => b.status === "confirmed")
@@ -1305,12 +1328,12 @@
     if (tab === "customers" || tab === "guides")
       return panel(
         tab === "customers" ? "Manage Customers" : "Manage Guides",
-        `${tab === "guides" ? `<form id="admin-guide-form"><div class="kt-fields">${field("Guide name", "name", "text", "", "required")}${field("Guide email", "email", "email", "", "required")}</div><button class="btn btn-primary">Add Demo Guide</button></form>` : ""}${
+        `${tab === "guides" ? `<form id="admin-guide-form"><div class="kt-fields">${field("Guide name", "name", "text", "", "required")}${field("Guide email", "email", "email", "", "required")}${field("Temporary password", "password", "password", "", 'required minlength="8" maxlength="100" autocomplete="new-password"')}</div><button class="btn btn-primary">Add Demo Guide</button></form>` : ""}${
           state.users
             .filter((x) => x.role === (tab === "customers" ? "hiker" : "guide"))
             .map(
               (x) =>
-                `<div class="kt-item"><div><strong>${esc(x.name)}</strong><p>${esc(x.email)} · ${tab === "customers" ? state.bookings.filter((b) => b.userId === x.id).length + " bookings" : state.hikes.filter((h) => h.guideId === x.id).length + " assigned hikes"}</p></div>${tab === "guides" ? `<div class="kt-actions">${btn("edit-guide", "Edit", x.id)}${btn("delete-guide", "Remove", x.id)}</div>` : `<div class="kt-actions">${btn("customer-history", "Booking history", x.id)}${btn("delete-customer", "Remove", x.id)}</div>`}</div>`,
+                `<div class="kt-item"><div><strong>${esc(x.name)}</strong><p>${esc(x.email)} · ${tab === "customers" ? state.bookings.filter((b) => b.userId === x.id).length + " bookings" : state.hikes.filter((h) => h.guideId === x.id).length + " assigned hikes"}</p></div>${tab === "guides" ? `<div class="kt-actions">${btn("edit-guide", "Edit", x.id)}${btn("reset-guide-password", "Set Password", x.id)}${btn("delete-guide", "Remove", x.id)}</div>` : `<div class="kt-actions">${btn("customer-history", "Booking history", x.id)}${btn("delete-customer", "Remove", x.id)}</div>`}</div>`,
             )
             .join("") || empty("No records yet.")
         }`,
@@ -1407,11 +1430,19 @@
         `<p>Review requests, assign guides, maintain trails, and monitor verified hiking operations.</p><div class="kt-actions"><a class="btn btn-primary" href="dashboard.html?tab=bookings">Review Bookings</a><a class="btn btn-secondary" href="dashboard.html?tab=reports">View Reports</a></div><h3>Contact inquiries</h3>${state.inquiries.map((i) => `<div class="kt-item"><div><strong>${esc(i.name)} · ${esc(i.topic)}</strong><p>${esc(i.message)}</p><small>${esc(i.email)}</small></div>${btn("delete-inquiry", "Archive", i.id)}</div>`).join("") || empty("No inquiries received in this browser.")}`,
     );
   }
+  function accountPane(u) {
+    const roleLabel = { hiker: "Hiker", guide: "Guide", admin: "Administrator" }[u.role] || "User";
+    return panel(
+      "Account Settings",
+      `<p class="kt-muted">Your role determines which dashboard sections you can access. Only an Administrator can create Guide accounts. This is a local browser demonstration, not a secure online account system.</p><div class="kt-fields"><div class="kt-field"><span>Account email</span><strong>${esc(u.email)}</strong></div><div class="kt-field"><span>Account role</span><strong>${esc(roleLabel)}</strong></div></div><h3>Change password</h3><form id="account-password-form"><div class="kt-fields">${field("Current password", "currentPassword", "password", "", 'required autocomplete="current-password"')}${field("New password", "newPassword", "password", "", 'required minlength="8" maxlength="100" autocomplete="new-password"')}${field("Confirm new password", "confirmPassword", "password", "", 'required minlength="8" maxlength="100" autocomplete="new-password"')}</div><button type="submit" class="btn btn-primary">Update Password</button></form>`,
+    );
+  }
   const tabConfig = {
     hiker: [
       ["overview", "Dashboard"],
       ["bookings", "My Bookings"],
       ["profile", "My Profile"],
+      ["account", "Account Settings"],
       ["history", "Hiking History & Stats"],
       ["achievements", "Achievements"],
       ["friends", "Friends & Activity"],
@@ -1420,6 +1451,7 @@
     guide: [
       ["overview", "Dashboard"],
       ["assigned", "Assigned Hikes"],
+      ["account", "Account Settings"],
       ["participants", "Participant List"],
       ["attendance", "Check-in"],
       ["completion", "Completion Records"],
@@ -1433,6 +1465,7 @@
       ["bookings", "Manage Bookings"],
       ["customers", "Manage Customers"],
       ["guides", "Manage Guides"],
+      ["account", "Account Settings"],
       ["achievements", "Manage Achievements"],
       ["reports", "Reports"],
       ["notifications", "Notifications"],
@@ -1530,6 +1563,20 @@
           fn(e.target, formValues(e.target));
         });
     };
+    on("account-password-form", async (f, v) => {
+      const u = me();
+      if (!u || !u.pass) return toast("This account has no password. Ask an Administrator to set one.", true);
+      if (u.pass !== (await digest(v.currentPassword + u.email)))
+        return toast("Current password is incorrect.", true);
+      if (v.newPassword !== v.confirmPassword)
+        return toast("New passwords do not match.", true);
+      if (v.newPassword === v.currentPassword)
+        return toast("Choose a different new password.", true);
+      u.pass = await digest(v.newPassword + u.email);
+      save();
+      f.reset();
+      toast("Account password updated.");
+    });
     on("profile-form", (f, v) => {
       const u = me();
       u.name = v.name.trim();
@@ -1614,19 +1661,23 @@
       save();
       renderDashboard();
     });
-    on("admin-guide-form", (f, v) => {
-      if (state.users.some((u) => u.email === v.email.trim().toLowerCase()))
+    on("admin-guide-form", async (f, v) => {
+      const email = v.email.trim().toLowerCase();
+      if (!v.name.trim()) return toast("Guide name required.", true);
+      if (state.users.some((u) => u.email === email))
         return toast("Email already exists.", true);
       state.users.push({
         id: next(),
         name: v.name.trim(),
-        email: v.email.trim().toLowerCase(),
+        email,
         role: "guide",
+        pass: await digest(v.password + email),
         bio: "",
         level: "Experienced",
       });
       save();
       renderDashboard();
+      toast("Guide account created. Share the temporary demo password with the guide.");
     });
     on("admin-achievement-form", (f, v) => {
       state.achievements.push({
@@ -1791,7 +1842,7 @@
       downloadTrailMap(t, h, b);
     });
   }
-  function action(name, id) {
+  async function action(name, id) {
     const u = me(),
       b = state.bookings.find((x) => x.id === Number(id));
     if (name === "logout") {
@@ -2117,8 +2168,24 @@
               state.users.some((x) => x.id !== g.id && x.email === val)
             )
               return toast("Invalid or duplicate guide email.", true);
+            if (val !== g.email) {
+              const newPassword = prompt("Set a new demo password for this guide (at least 8 characters):");
+              if (newPassword === null) return;
+              if (newPassword.length < 8) return toast("Password must be at least 8 characters.", true);
+              g.pass = await digest(newPassword + val);
+            }
             g.email = val;
           }
+        }
+      }
+      if (name === "reset-guide-password") {
+        const g = who(Number(id));
+        if (g?.role === "guide") {
+          const password = prompt("Set a demo password for this guide (at least 8 characters):");
+          if (password === null) return;
+          if (password.length < 8) return toast("Password must be at least 8 characters.", true);
+          g.pass = await digest(password + g.email);
+          toast("Guide password updated.");
         }
       }
       if (name === "delete-guide") {
