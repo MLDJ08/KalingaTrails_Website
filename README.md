@@ -1,45 +1,75 @@
 # Kalinga Trails Website
 
-This updated project continues the original Kalinga Trails HTML pages, typography, navigation and visual design. It uses ONLY HTML, CSS, and vanilla JavaScript. There is no Python, Flask, Node application server, or database code in this ZIP.
+**Group 9 | Web Development Project**
 
-## Start
+## Project Overview
 
-1. Extract the ZIP, and open the `KalingaTrails_Website` folder in VS Code.
-2. Install/use the VS Code **Live Server** extension.
-3. Right-click `index.html` and select **Open with Live Server**.
-4. Use the site's **Sign Up** button to create a local demo hiker, or **Log In** to access the demo role shortcuts.
-5. Do not navigate to `/book/1` — this is not a route in a static website. Bookings live at `book.html?hike=1` and are linked from each hike detail page.
+Kalinga Trails is a fictional hiking and outdoor adventure company created for our Web Development project. We chose this concept because hiking is more enjoyable when people have access to clear trip information, organized schedules, and guides they can rely on. Our tagline, **“Sa Bawat Lakad, Kalinga ang Kasama!”**, reflects the care and sense of community we want the company to represent.
 
-> This is a browser-only, single-device prototype. Accounts and passwords are **not securely authenticated**. Local passwords are hashed in the browser, but authentication can be bypassed by editing local storage. Role selection is for demonstrations only. Local browser storage is not a protected database, shared between users, or synchronized across devices. Booking requests, health-declaration selections, contacts, uploads, messages, and notifications remain in localStorage on the device. **Do not enter real personal or medical data.** Real email is NOT sent. Do not deploy as a live business booking service.
+We built the website to introduce Kalinga Trails and make it easier for visitors to explore guided hikes. Visitors can browse trails, check hike details, and learn about the company. Registered users can try the booking process and view their hiking profiles, while the guide and administrator dashboards show how the business could manage participants and organized trips.
 
-## Demo workflow
+Our goal is to connect the different parts of a hiking business in one website, from discovering a trail and requesting a booking to checking attendance and recording a completed hike. We also included community features and achievements to encourage hikers to stay involved after their trips.
 
-1. Sign Up as a hiker; then from **Trails & Hikes**, open a hike and select **Book This Hike**.
-2. Fill out the form, enter your own account name on the **first line** of participants, and confirm. It will appear as **Pending** in **My Bookings** and available slots decrease.
-3. Log out and open **Log In**. Choose **Admin demonstration**. In **Manage Bookings**, select **Confirm**.
-4. For a completion demonstration, use **Manage Hikes > Edit** to set a scheduled date to **today or earlier**. (The demo starts with future hike schedules.)
-5. Log out, open **Log In**, select **Guide demonstration**. Open **Check-in**. Mark the named account holder **Present**, then **Completed**, and save.
-6. Return to the original hiker account through **Log In**. **Hiking History & Stats** and **Achievements** will reflect the guide-verified completion.
-7. For social testing, register another local hiker and exchange friend requests, posts, kudos and comments.
+This website is a school project and uses fictional business information and demonstration data. It is not an operating commercial booking platform.
 
-Guide confirmations and attendance may be completed only for the selected guide's confirmed bookings. The **Completed** value is refused when attendance is not **Present**, and cannot be saved before the hike date. Customers have no interface for changing their official history. Other participants in a group booking are named participants, not registered users; they do not receive achievements on this prototype.
+## Team Members and Roles
 
-## Files
+Our group divided the work into modules so each member has a clear area of responsibility. We also help one another when testing and combining changes to the website.
 
-Original: `index.html`, `about.html`, `trails.html`, `hike-details.html`, `community.html`, `gallery.html`, `contact.html`, `style.css`, `assets/logo.svg`.
+- **Mark Lorenz C. De Jesus – Project Manager, Company Website, and Customer Support.** Mark coordinates the group's progress and works on the homepage, About Us page, company information, branding, gallery content, contact page, frequently asked questions, and proposed booking policies.
+- **Lorenzo M. Duco – Web Developer, Hike Discovery, Booking, and Administration.** Lorenzo focuses on trail listings, search filters, hike schedules, booking requests, and the administrator tools used to manage hikes, bookings, customers, and guides.
+- **Jayvee L. Gingco – UI/UX Designer, User Accounts, and Hiker Features.** Jayvee works on the sign-up and login experience, role-based navigation, hiker dashboard, profiles, achievements, community interactions, and notifications. He also helps keep the interface consistent and easy to use.
+- **Justin Jose L. Calleja – Researcher, Guide Operations, and Quality Assurance.** Justin prepares trail and safety information, works on guide-related features such as attendance and hike completion, tests website functionality and responsiveness, and helps prepare documentation.
 
-Added: `auth.html`, `book.html`, `dashboard.html`, `enhancements.css`, `app.js`, `IMPLEMENTATION_STATUS.md`.
+## What the Website Offers
 
-## Reset local demo data
+The website has public pages for visitors and separate sections for hikers, guides, and administrators.
 
-In the browser developer tools > Application > Local Storage, remove the entry `kalinga-trails-demo-v3` and refresh. This resets demo users, bookings, posts, photos and all other changes. Clearing browsing data will also remove them.
+- **Home and About Us:** Introduce the company, its purpose, and what visitors can expect from a guided hike.
+- **Trails and Hikes:** Let visitors explore available hikes and view information such as difficulty, distance, schedule, and available slots.
+- **Booking Requests:** Allow hikers to request a spot on an organized trip and review the status of their request.
+- **Hiker Dashboard:** Show upcoming bookings, profile information, completed hikes, statistics, and achievements.
+- **Guide Dashboard:** Help guides view assigned hikes, check attendance, and record hike completion.
+- **Administrator Dashboard:** Provide tools for managing trails, schedules, bookings, customers, and guides.
+- **Community and Gallery:** Give the website a more social side through activity posts, comments, kudos, and hiking photos.
+- **Contact and FAQs:** Provide general information, an inquiry form, and answers to common questions.
 
-## Important limitations
+## Tools and Technologies
 
-- No secure user login, server-side permissions, real payment, email/SMS/push notifications or live synchronized availability.
-- Device/browser-local storage only. Not safe for real customer information or sensitive health declarations.
-- In-app notices are saved locally, not delivered to other devices.
-- Admin trail and hike editing uses simple prompts; this can be made more polished in a future backend implementation.
-- Weather information is a written safety advisory, not a live forecast.
-- Images from Unsplash need an internet connection.
-- A production system needs backend validation and a real database. Those are intentionally excluded to comply with the HTML/CSS/JS-only instruction.
+We used HTML, CSS, and JavaScript to build the website. HTML organizes the content, CSS handles the layout and appearance, and JavaScript powers interactive features such as booking requests and dashboard actions.
+
+We developed and tested the pages using Visual Studio Code and Live Server. Git and GitHub help us manage changes to the project, while GitHub Pages is used for publishing the static website. The uploaded project contains `style.css` and `enhancements.css` for styling, along with `app.js` for JavaScript functionality.
+
+For demonstration purposes, the website saves some information in the browser's localStorage. This means the data is kept locally in the browser instead of being stored in an online database.
+
+## How to Open the Website
+
+- Download or clone the project folder.
+- Open the folder in Visual Studio Code.
+- Open `index.html` using Live Server, or visit the deployed GitHub Pages website.
+- Use the navigation menu to explore the public pages.
+- For the role-based features, use fictional details and the available demonstration login options.
+
+The files should be kept in their original folder structure so that the links, styles, scripts, and images load correctly.
+
+## How to Try the Main Features
+
+A simple way to explore the project is to begin as a hiker. Choose a trail, read the hike details, and submit a booking request. Then open the administrator demonstration to review the request and confirm it. After that, use the guide demonstration to record attendance and completion for an eligible hike. Returning to the hiker dashboard will show how a completed trip contributes to hiking history and achievements.
+
+This flow shows how the website connects customer booking, business operations, and a hiker's progress. It is a demonstration of the intended process rather than a real reservation.
+
+## Current Limitations
+
+Because this is a front-end school project, some features are simplified for demonstration.
+
+- Accounts, bookings, and other records are saved in the browser and are not shared across devices.
+- The login system and user roles are for demonstration only and are not secure enough for real customer accounts.
+- The website does not process actual payments or send real email or SMS notifications.
+- Hiking schedules, guide information, availability, and business policies are examples rather than confirmed commercial details.
+- Users should not enter real passwords, health details, or other sensitive personal information.
+
+A future version would need a secure backend, a shared database, and stronger account protection before it could support real customers.
+
+## Final Note
+
+Working on Kalinga Trails helped our group understand how a website can support both customers and the people managing a business. Beyond designing pages, we learned how to connect different user roles, organize information, test interactive features, and collaborate through GitHub. We hope the project shows a practical starting point for a guided-hiking platform that values adventure, safety, and community.
