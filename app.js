@@ -322,26 +322,42 @@
   function renderTrails() {
     const host = $("#kt-trail-list");
     if (!host) return;
-    const dif = $("#difficulty-filter")?.value || "",
-      loc = ($("#location-filter")?.value || "").toLowerCase(),
-      date = $("#date-filter")?.value || "";
-    let count = 0;
-    host.innerHTML = state.hikes
+    const dif = $("#difficulty-filter")?.value || "";
+    const loc = ($("#location-filter")?.value || "").trim().toLowerCase();
+    const date = $("#date-filter")?.value || "";
+    const matches = state.hikes
       .filter((h) => h.status === "active")
       .map((h) => ({ h, t: trail(h.trailId) }))
       .filter(
         ({ h, t }) =>
           t &&
           (!dif || t.difficulty === dif) &&
-          (!loc || t.location.toLowerCase().includes(loc)) &&
+          (!loc || `${t.location} ${t.name}`.toLowerCase().includes(loc)) &&
           (!date || h.date >= date),
-      )
+      );
+    host.innerHTML = matches
       .map(({ h, t }) => {
-        count++;
-        return `<article class="card"><img class="card-image" src="${esc(t.image)}" alt="${esc(t.name)} mountain trail"><div class="card-body">${badge(t.difficulty)}<h3>${esc(t.name)}</h3><p>${esc(t.description)}</p><div class="card-meta">${badge(t.distance + " km")}${badge("Elevation " + t.elevation + " m")}${badge(t.duration)}${badge(slots(h) + " slots")}</div><p><strong>Schedule:</strong> ${fullDate(h.date)}</p><p><strong>Location:</strong> ${esc(t.location)}</p><p><strong>Guide:</strong> ${esc(who(h.guideId)?.name || "To be assigned")}</p><a class="btn btn-primary" href="hike-details.html?hike=${h.id}">View Hike</a></div></article>`;
+        const left = slots(h);
+        const availability = left <= 0 ? "Fully booked" : `${left} spots left`;
+        return `<div class="col-12 col-md-6 col-xl-4 kt-lz-trail-col">
+        <article class="card kt-lz-trail-card h-100">
+          <div class="kt-lz-card-media"><img class="card-image" src="${esc(t.image)}" alt="${esc(t.name)} hiking scenery" loading="lazy"><span class="kt-lz-media-pill">${esc(t.difficulty)}</span></div>
+          <div class="card-body kt-lz-trail-body">
+            <p class="kt-lz-card-location">⌖ ${esc(t.location)}</p>
+            <h3>${esc(t.name)}</h3>
+            <p class="kt-lz-card-desc">${esc(t.description)}</p>
+            <div class="card-meta kt-lz-card-meta">${badge(`${t.distance} km`)}${badge(`${t.elevation} m elevation`)}${badge(t.duration)}</div>
+            <div class="kt-lz-card-schedule"><span><small>Next hike</small><strong>${esc(fullDate(h.date))}</strong></span><span class="kt-lz-availability ${left <= 0 ? "is-full" : ""}">${esc(availability)}</span></div>
+            <a class="btn btn-primary kt-lz-card-cta" href="hike-details.html?hike=${h.id}">View hike details <span aria-hidden="true">→</span></a>
+          </div>
+        </article>
+      </div>`;
       })
       .join("");
-    $("#kt-no-results").hidden = !!count;
+    const count = $("#kt-lz-trail-count");
+    if (count)
+      count.textContent = `${matches.length} ${matches.length === 1 ? "hike" : "hikes"} available`;
+    $("#kt-no-results").hidden = matches.length > 0;
   }
   // The prototype has no GPS tracks or surveyed trail coordinates. This
   // downloadable overview intentionally contains no invented trail route.
@@ -389,8 +405,8 @@
   function trailMapSvg(t, h) {
     // A self-contained SVG can be previewed, saved, and opened without a map API.
     // Decorative contour shapes do NOT represent real trail or terrain data.
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 680" width="1000" height="680" role="img" aria-label="Illustrative trail location overview for ${esc(t.name)}">
-      <title>${esc(t.name)} — illustrative trail overview</title>
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 680" width="1000" height="680" role="img" aria-label="Trail area preview for ${esc(t.name)}">
+      <title>${esc(t.name)} — sample trail overview</title>
       <desc>General trail information for ${esc(t.location)}. No GPS route or surveyed map data is available. Not suitable for navigation.</desc>
       <defs>
         <linearGradient id="kt-map-terrain" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#e4ece3"/><stop offset="1" stop-color="#c2d7cb"/></linearGradient>
@@ -415,7 +431,7 @@
         </g>
       </g>
       <rect x="80" y="199" width="224" height="37" rx="18" fill="#f8f7f3" opacity=".96"/>
-      <text x="100" y="224" fill="#2f5d50" font-family="Arial,sans-serif" font-size="15" font-weight="700">ILLUSTRATIVE TERRAIN</text>
+      <text x="100" y="224" fill="#2f5d50" font-family="Arial,sans-serif" font-size="15" font-weight="700">AREA PREVIEW</text>
       <rect x="80" y="296" width="570" height="127" rx="18" fill="#ffffff" opacity=".92"/>
       <text x="102" y="331" fill="#486b7a" font-family="Arial,sans-serif" font-size="16" font-weight="700" letter-spacing="1">TRAIL LOCATION</text>
       <text fill="#203b2d" font-family="Arial,sans-serif" font-size="31" font-weight="700">${mapSvgLines(t.location, 102, 372, 32, 2, 33)}</text>
@@ -436,217 +452,194 @@
       <text x="48" y="647" fill="#5d6460" font-family="Arial,sans-serif" font-size="16">There is no verified route data. Follow your guide and request an official trail map.</text>
     </svg>`;
   }
-  function trailDownloadSvg(t, h) {
-    const seedSource = `${t?.name || "Trail"}|${t?.location || "Location"}|${h?.date || "Date"}`;
-    let seed = 0;
-    for (let i = 0; i < seedSource.length; i += 1) {
-      seed = (seed * 31 + seedSource.charCodeAt(i)) >>> 0;
+  // Every map is based on the current booking -> scheduled hike -> trail.
+  // The drawn route is deliberately fictional; it is NOT GPS navigation data.
+  function bookingMapSeed(t, h, b) {
+    const text = `${b?.id ?? ""}|${h?.id ?? ""}|${h?.date ?? ""}|${t?.id ?? ""}|${t?.name ?? ""}`;
+    let seed = 2166136261;
+    for (let i = 0; i < text.length; i++) {
+      seed = Math.imul(seed ^ text.charCodeAt(i), 16777619) >>> 0;
     }
-    const random = () => {
-      seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed;
+  }
+  function randomMapGenerator(t, h, b) {
+    let seed = bookingMapSeed(t, h, b);
+    return () => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
       return seed / 4294967296;
     };
-    const formatRoutePoint = (value) => value.toFixed(1);
-    const routePoints = [];
-    let x = 140 + random() * 90;
-    let y = 690 + random() * 80;
-    routePoints.push([x, y]);
-    for (let i = 1; i < 9; i += 1) {
-      x += 95 + random() * 85;
-      y += (random() - 0.5) * 190 - 20;
-      x = Math.max(120, Math.min(940, x));
-      y = Math.max(120, Math.min(760, y));
-      routePoints.push([x, y]);
+  }
+  function googleTrailSearch(t) {
+    if (t?.googleMapsQuery?.trim()) return t.googleMapsQuery.trim();
+    const name = String(t?.name || "").toLowerCase();
+    const location = String(t?.location || "").trim();
+    // Match the real named mountain rather than Kalinga's demo activity title.
+    if (
+      /\b(?:mount|mt\.?)[ -]*ulap\b/i.test(name) &&
+      /itogon|benguet/i.test(location)
+    )
+      return "Mount Ulap Eco Trail, Ampucao, Itogon, Benguet, Philippines";
+    // These two are fictional trail names, so use their documented areas only.
+    if (name === "forest ridge walk" && /baguio/i.test(location))
+      return "Baguio City, Philippines";
+    if (name === "highland summit" && /benguet/i.test(location))
+      return "Benguet, Philippines";
+    // For new, user-managed trails, use its actual saved name and location.
+    return [
+      t?.name,
+      location,
+      /philippines/i.test(location) ? "" : "Philippines",
+    ]
+      .filter(Boolean)
+      .join(", ");
+  }
+  function mapPhotoForBooking(t, h, b) {
+    // These images are scenic preview images, not evidence of an actual route.
+    const pools = {
+      1: [
+        t.image,
+        image("photo-1464822759023-fed622ff2c3b"),
+        image("photo-1551632811-561732d1e306"),
+      ],
+      2: [
+        t.image,
+        image("photo-1441974231531-c6227db76b6e"),
+        image("photo-1473448912268-2022ce9509d8"),
+      ],
+      3: [
+        t.image,
+        image("photo-1519681393784-d120267933ba"),
+        image("photo-1464278533981-50106e6176b1"),
+      ],
+    };
+    const choices = pools[t.id] || [t.image].filter(Boolean);
+    return choices[bookingMapSeed(t, h, b) % choices.length] || t.image || "";
+  }
+  function svgBookingText(
+    value,
+    x,
+    y,
+    maxCharacters = 24,
+    maxLines = 2,
+    size = 20,
+    lineHeight = 23,
+  ) {
+    return `<text x="${x}" y="${y}" fill="#23382e" font-family="Arial,sans-serif" font-size="${size}" font-weight="700">${mapSvgLines(value, x, y, maxCharacters, maxLines, lineHeight)}</text>`;
+  }
+  function trailDownloadSvg(t, h, b) {
+    const rand = randomMapGenerator(t, h, b);
+    const fmt = (n) => n.toFixed(1);
+    // Route is generated from this booking's seed so separate bookings get
+    // different visual patterns without implying official GPS coordinates.
+    const route = [];
+    let x = 115 + rand() * 58;
+    let y = 655 + rand() * 40;
+    route.push([x, y]);
+    for (let i = 1; i < 10; i++) {
+      x += 74 + rand() * 24;
+      y -= 41 + rand() * 44;
+      y += (rand() - 0.5) * 70;
+      route.push([Math.min(870, x), Math.max(303, Math.min(736, y))]);
     }
-    routePoints[routePoints.length - 1][0] = Math.max(
-      routePoints[routePoints.length - 1][0],
-      895,
-    );
-    routePoints[routePoints.length - 1][1] = 135 + random() * 90;
-
-    const routePath = routePoints
-      .map((coords, index) => {
-        const [px, py] = coords;
-        if (index === 0)
-          return `M ${formatRoutePoint(px)} ${formatRoutePoint(py)}`;
-        const [prevX, prevY] = routePoints[index - 1];
-        const cp1x = prevX + (px - prevX) * (0.28 + random() * 0.18);
-        const cp1y = prevY + (random() - 0.5) * 96;
-        const cp2x = prevX + (px - prevX) * (0.64 + random() * 0.18);
-        const cp2y = py + (random() - 0.5) * 96;
-        return `C ${formatRoutePoint(cp1x)} ${formatRoutePoint(cp1y)} ${formatRoutePoint(cp2x)} ${formatRoutePoint(cp2y)} ${formatRoutePoint(px)} ${formatRoutePoint(py)}`;
+    route[route.length - 1] = [870, 325 + rand() * 65];
+    const routePath = route
+      .map(([rx, ry], i) => {
+        if (!i) return `M ${fmt(rx)} ${fmt(ry)}`;
+        const [px, py] = route[i - 1];
+        return `C ${fmt(px + (rx - px) * 0.4)} ${fmt(py + (rand() - 0.5) * 60)} ${fmt(px + (rx - px) * 0.65)} ${fmt(ry + (rand() - 0.5) * 60)} ${fmt(rx)} ${fmt(ry)}`;
       })
       .join(" ");
-
-    const contourPaths = Array.from({ length: 12 }, (_, index) => {
-      const startX = -80 + random() * 180;
-      const startY = 95 + index * 54 + random() * 40;
-      const c1x = 260 + random() * 180;
-      const c1y = startY - 85 + random() * 140;
-      const c2x = 640 + random() * 180;
-      const c2y = startY - 85 + random() * 140;
-      const endX = 1080 - random() * 70;
-      const endY = startY + (random() - 0.5) * 48;
-      return `<path d="M ${formatRoutePoint(startX)} ${formatRoutePoint(startY)} C ${formatRoutePoint(c1x)} ${formatRoutePoint(c1y)} ${formatRoutePoint(c2x)} ${formatRoutePoint(c2y)} ${formatRoutePoint(endX)} ${formatRoutePoint(endY)}"/>`;
+    const contours = Array.from({ length: 12 }, (_, i) => {
+      const cy = 300 + i * 42;
+      return `<path d="M 55 ${fmt(cy + rand() * 35)} Q 420 ${fmt(cy - 96 + rand() * 120)} 970 ${fmt(cy + rand() * 90)}"/>`;
     }).join("");
-
-    const treeClusters = Array.from({ length: 15 }, () => {
-      const tx = 120 + random() * 800;
-      const ty = 120 + random() * 610;
-      const scale = 0.8 + random() * 0.75;
-      return `<g transform="translate(${formatRoutePoint(tx)} ${formatRoutePoint(ty)}) scale(${scale.toFixed(2)})">
-        <circle cx="0" cy="0" r="16" fill="#6d9a7b" opacity="0.92"/>
-        <circle cx="12" cy="-12" r="14" fill="#80ab8c" opacity="0.92"/>
-        <circle cx="-12" cy="-10" r="13" fill="#7ba889" opacity="0.92"/>
-        <rect x="-3.5" y="9" width="7" height="20" rx="2" fill="#7e6048"/>
-      </g>`;
+    const trees = Array.from({ length: 26 }, () => {
+      const tx = 105 + rand() * 810,
+        ty = 280 + rand() * 475;
+      const s = 0.7 + rand() * 0.7;
+      return `<g transform="translate(${fmt(tx)} ${fmt(ty)}) scale(${fmt(s)})" opacity=".67"><circle r="15" fill="#8aad93"/><circle cx="9" cy="-9" r="13" fill="#769d82"/><circle cx="-10" cy="-6" r="11" fill="#5f8970"/></g>`;
     }).join("");
-
-    const lakeShapes = Array.from({ length: 3 }, () => {
-      const lx = 170 + random() * 670;
-      const ly = 180 + random() * 500;
-      const rx = 50 + random() * 80;
-      const ry = 24 + random() * 46;
-      const rot = -30 + random() * 60;
-      return `<ellipse cx="${formatRoutePoint(lx)}" cy="${formatRoutePoint(ly)}" rx="${formatRoutePoint(rx)}" ry="${formatRoutePoint(ry)}" transform="rotate(${rot.toFixed(1)} ${formatRoutePoint(lx)} ${formatRoutePoint(ly)})" fill="#cfe6e6" stroke="#9dc4c6" stroke-width="2" opacity="0.8"/>`;
-    }).join("");
-
-    const waypointDots = routePoints
-      .slice(1, -1)
-      .map(([px, py], index) => {
-        const label = index + 1;
-        return `<g>
-        <circle cx="${formatRoutePoint(px)}" cy="${formatRoutePoint(py)}" r="8.5" fill="#fff8ee" stroke="#275346" stroke-width="2.8"/>
-        <text x="${formatRoutePoint(px + 16)}" y="${formatRoutePoint(py - 12)}" fill="#275346" font-family="Arial,sans-serif" font-size="13" font-weight="700">WP ${label}</text>
-      </g>`;
+    const waypoints = route
+      .slice(2, -1)
+      .filter((_, i) => i % 2 === 0)
+      .map(
+        ([rx, ry], i) =>
+          `<circle cx="${fmt(rx)}" cy="${fmt(ry)}" r="9" stroke="#285747" stroke-width="3" fill="#fffaf0"/>`,
+      )
+      .join("");
+    const [sx, sy] = route[0],
+      [ex, ey] = route[route.length - 1];
+    const guideName = who(h.guideId)?.name || "To be assigned";
+    const participants = b?.participants?.length ?? 0;
+    const rows = [
+      ["Hike date", fullDate(h.date)],
+      ["Difficulty", t.difficulty || "Not set"],
+      ["Distance", `${t.distance ?? "—"} km`],
+      ["Elevation", `${t.elevation ?? "—"} m`],
+      ["Duration", t.duration || "Not set"],
+      ["Participants", String(participants)],
+      ["Assigned guide", guideName],
+      ["Meeting point", t.meeting || "Confirm with guide"],
+    ];
+    let rowY = 318;
+    const facts = rows
+      .map(([label, value]) => {
+        const isLong = String(value).length > 29;
+        const hgt = isLong ? 65 : 58;
+        const output = `<text x="1010" y="${rowY}" fill="#667c6d" font-family="Arial,sans-serif" font-size="15">${esc(label.toUpperCase())}</text>${svgBookingText(value, 1010, rowY + 25, 27, 2, 19, 21)}`;
+        rowY += hgt;
+        return output;
       })
       .join("");
-
-    const [startX, startY] = routePoints[0];
-    const [endX, endY] = routePoints[routePoints.length - 1];
-    const profileHeights = Array.from({ length: 8 }, (_, index) => {
-      const progress = index / 7;
-      return (
-        95 -
-        (Math.sin(progress * Math.PI * 1.35 + random()) * 22 +
-          random() * 16 +
-          index * 2.4)
-      );
-    });
-    const profilePoints = profileHeights
-      .map((value, index) => `${76 + index * 33},${value.toFixed(1)}`)
-      .join(" ");
-    const safeDistance = Number(t?.distance) || 4 + Math.round(random() * 8);
-    const safeElevation =
-      Number(t?.elevation) || 600 + Math.round(random() * 700);
-    const estHours = Math.max(2, Math.round(safeDistance / 2 + random() * 3));
-    const stageNames = [
-      "Trailhead",
-      "Pine Bend",
-      "Ridge Turn",
-      "View Deck",
-      "Summit Zone",
-    ];
-
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 1000" width="1400" height="1000" role="img" aria-label="Detailed trail map">
-      <defs>
-        <linearGradient id="kt-dl-bg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="#f7faf5"/>
-          <stop offset="1" stop-color="#edf3ed"/>
-        </linearGradient>
-        <linearGradient id="kt-route-shadow" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stop-color="#95b6a3"/>
-          <stop offset="1" stop-color="#c5d8cb"/>
-        </linearGradient>
-      </defs>
-      <rect width="1400" height="1000" fill="url(#kt-dl-bg)"/>
-      <rect x="34" y="34" width="1332" height="932" rx="28" fill="#fbfcf9" stroke="#bccabf" stroke-width="3"/>
-      <text x="74" y="86" fill="#2f5d50" font-family="Arial,sans-serif" font-size="18" letter-spacing="4" font-weight="700">KALINGA TRAILS</text>
-      <text x="74" y="138" fill="#1f2e2b" font-family="Arial,sans-serif" font-size="42" font-weight="700">Adventure Trail Map</text>
-      <text x="74" y="172" fill="#4b5b55" font-family="Arial,sans-serif" font-size="20">${esc(t?.name || "Scenic Route")} · ${esc(t?.location || "Mountain Region")}</text>
-      <text x="1230" y="86" text-anchor="end" fill="#587569" font-family="Arial,sans-serif" font-size="17" font-weight="700" letter-spacing="2">FIELD COPY</text>
-      <text x="1230" y="114" text-anchor="end" fill="#6a7772" font-family="Arial,sans-serif" font-size="15">Generated for confirmed booking</text>
-
-      <rect x="70" y="210" width="960" height="690" rx="24" fill="#dfe9df" stroke="#c3d1c5" stroke-width="3"/>
-      <g opacity="0.22" stroke="#93aa98" stroke-width="1.4">
-        ${Array.from({ length: 10 }, (_, i) => `<line x1="70" y1="${260 + i * 60}" x2="1030" y2="${260 + i * 60}"/>`).join("")}
-        ${Array.from({ length: 12 }, (_, i) => `<line x1="${120 + i * 75}" y1="210" x2="${120 + i * 75}" y2="900"/>`).join("")}
+    const titleLines = mapLines(t.name, 37, 2);
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1000" viewBox="0 0 1400 1000" role="img" aria-label="Trail preview for booking ${esc(b?.id || "")}">
+      <title>${esc(t.name)} — sample trail overview</title>
+      <desc>Booking details from Kalinga Trails with a fictional decorative route. Not a GPS navigation map.</desc>
+      <defs><clipPath id="kt-export-map-clip"><rect x="70" y="268" width="900" height="510" rx="22"/></clipPath></defs>
+      <rect width="1400" height="1000" fill="#f8f7f3"/>
+      <rect x="0" y="0" width="1400" height="16" fill="#2f5d50"/>
+      <text x="70" y="63" fill="#2f5d50" font-family="Arial,sans-serif" font-size="19" font-weight="700" letter-spacing="4">KALINGA TRAILS</text>
+      <text x="70" y="${titleLines.length > 1 ? 119 : 132}" fill="#1b2f27" font-family="Arial,sans-serif" font-size="39" font-weight="700">${mapSvgLines(t.name, 70, titleLines.length > 1 ? 119 : 132, 37, 2, 40)}</text>
+      <text x="70" y="217" fill="#5b7067" font-family="Arial,sans-serif" font-size="19">${mapSvgLines(t.location, 70, 217, 55, 1, 22)}</text>
+      <rect x="985" y="47" width="344" height="179" rx="18" fill="#e9efe9"/>
+      <text x="1009" y="82" fill="#436b58" font-family="Arial,sans-serif" font-size="16" font-weight="700">CONFIRMED BOOKING</text>
+      <text x="1009" y="128" fill="#233c2e" font-family="Arial,sans-serif" font-size="37" font-weight="700">#${esc(b?.id ?? "—")}</text>
+      <text x="1009" y="172" fill="#5a7166" font-family="Arial,sans-serif" font-size="16">Trail itinerary &amp; overview</text>
+      <text x="1009" y="201" fill="#5a7166" font-family="Arial,sans-serif" font-size="15">Illustration only · Not to scale</text>
+      <rect x="70" y="268" width="900" height="510" rx="22" fill="#dceadd" stroke="#c1d0c4" stroke-width="2"/>
+      <g clip-path="url(#kt-export-map-clip)">
+        <rect x="70" y="268" width="900" height="510" fill="#e0ebe0"/>
+        <ellipse cx="250" cy="416" rx="170" ry="114" fill="#c6dec7" opacity=".55"/>
+        <ellipse cx="760" cy="665" rx="210" ry="120" fill="#bad4c1" opacity=".53"/>
+        <g fill="none" stroke="#9cb6a1" stroke-width="2.5" opacity=".55">${contours}</g>
+        ${trees}
+        <path d="${routePath}" fill="none" stroke="#9ab2a3" stroke-width="23" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="${routePath}" fill="none" stroke="#fff7e6" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="${routePath}" fill="none" stroke="#235642" stroke-width="6" stroke-dasharray="14 12" stroke-linecap="round" stroke-linejoin="round"/>
+        ${waypoints}
+        <circle cx="${fmt(sx)}" cy="${fmt(sy)}" r="17" stroke="#295948" stroke-width="5" fill="#fff"/>
+        <circle cx="${fmt(ex)}" cy="${fmt(ey)}" r="18" stroke="#c27848" stroke-width="6" fill="#fff"/>
+        <circle cx="${fmt(ex)}" cy="${fmt(ey)}" r="6" fill="#c27848"/>
       </g>
-      <g fill="none" stroke="#99ae9d" stroke-width="3" opacity="0.65">${contourPaths}</g>
-      <g>${lakeShapes}</g>
-      <g>${treeClusters}</g>
-      <path d="${routePath}" fill="none" stroke="url(#kt-route-shadow)" stroke-width="26" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
-      <path d="${routePath}" fill="none" stroke="#fff5e4" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="${routePath}" fill="none" stroke="#29594a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="18 14"/>
-      ${waypointDots}
-      <g>
-        <circle cx="${formatRoutePoint(startX)}" cy="${formatRoutePoint(startY)}" r="18" fill="#ffffff" stroke="#2f5d50" stroke-width="5"/>
-        <circle cx="${formatRoutePoint(startX)}" cy="${formatRoutePoint(startY)}" r="6" fill="#2f5d50"/>
-        <text x="${formatRoutePoint(startX + 22)}" y="${formatRoutePoint(startY + 6)}" fill="#2f5d50" font-family="Arial,sans-serif" font-size="16" font-weight="700">START · ${stageNames[0]}</text>
-      </g>
-      <g>
-        <circle cx="${formatRoutePoint(endX)}" cy="${formatRoutePoint(endY)}" r="21" fill="#ffffff" stroke="#c96a3d" stroke-width="6"/>
-        <circle cx="${formatRoutePoint(endX)}" cy="${formatRoutePoint(endY)}" r="7" fill="#c96a3d"/>
-        <text x="${formatRoutePoint(endX - 18)}" y="${formatRoutePoint(endY - 28)}" text-anchor="end" fill="#9a562f" font-family="Arial,sans-serif" font-size="16" font-weight="700">FINISH · ${stageNames[4]}</text>
-      </g>
-
-      <rect x="1060" y="210" width="268" height="325" rx="20" fill="#ffffff" stroke="#d7dfd8" stroke-width="2.5"/>
-      <text x="1090" y="250" fill="#355f52" font-family="Arial,sans-serif" font-size="22" font-weight="700">Trail Snapshot</text>
-      <text x="1090" y="286" fill="#64736d" font-family="Arial,sans-serif" font-size="15">Type</text>
-      <text x="1090" y="312" fill="#1e2d29" font-family="Arial,sans-serif" font-size="24" font-weight="700">Guided Scenic Route</text>
-      <text x="1090" y="354" fill="#64736d" font-family="Arial,sans-serif" font-size="15">Distance</text>
-      <text x="1090" y="382" fill="#1e2d29" font-family="Arial,sans-serif" font-size="24" font-weight="700">${esc(String(safeDistance))} km</text>
-      <text x="1090" y="423" fill="#64736d" font-family="Arial,sans-serif" font-size="15">Elevation Gain</text>
-      <text x="1090" y="451" fill="#1e2d29" font-family="Arial,sans-serif" font-size="24" font-weight="700">${esc(String(safeElevation))} m</text>
-      <text x="1090" y="492" fill="#64736d" font-family="Arial,sans-serif" font-size="15">Estimated Time</text>
-      <text x="1090" y="520" fill="#1e2d29" font-family="Arial,sans-serif" font-size="24" font-weight="700">${esc(String(estHours))} hrs</text>
-
-      <rect x="1060" y="556" width="268" height="156" rx="20" fill="#ffffff" stroke="#d7dfd8" stroke-width="2.5"/>
-      <text x="1090" y="595" fill="#355f52" font-family="Arial,sans-serif" font-size="22" font-weight="700">Legend</text>
-      <line x1="1092" y1="630" x2="1162" y2="630" stroke="#29594a" stroke-width="7" stroke-dasharray="16 13" stroke-linecap="round"/>
-      <text x="1178" y="636" fill="#23332f" font-family="Arial,sans-serif" font-size="15">Main hiking route</text>
-      <circle cx="1100" cy="667" r="8" fill="#fff8ee" stroke="#29594a" stroke-width="2.5"/>
-      <text x="1178" y="672" fill="#23332f" font-family="Arial,sans-serif" font-size="15">Waypoint / rest stop</text>
-      <rect x="1090" y="693" width="26" height="16" rx="8" fill="#cfe6e6" stroke="#9dc4c6" stroke-width="2"/>
-      <text x="1178" y="706" fill="#23332f" font-family="Arial,sans-serif" font-size="15">Water or open feature</text>
-
-      <rect x="1060" y="734" width="268" height="166" rx="20" fill="#ffffff" stroke="#d7dfd8" stroke-width="2.5"/>
-      <text x="1090" y="773" fill="#355f52" font-family="Arial,sans-serif" font-size="22" font-weight="700">Compass</text>
-      <circle cx="1190" cy="836" r="48" fill="#f6faf5" stroke="#d5ddd6" stroke-width="3"/>
-      <line x1="1190" y1="792" x2="1190" y2="880" stroke="#274b40" stroke-width="3"/>
-      <line x1="1146" y1="836" x2="1234" y2="836" stroke="#274b40" stroke-width="3"/>
-      <polygon points="1190,787 1203,824 1190,816 1177,824" fill="#c96a3d"/>
-      <text x="1190" y="771" text-anchor="middle" fill="#274b40" font-family="Arial,sans-serif" font-size="17" font-weight="700">N</text>
-      <text x="1248" y="842" text-anchor="middle" fill="#274b40" font-family="Arial,sans-serif" font-size="15" font-weight="700">E</text>
-      <text x="1190" y="904" text-anchor="middle" fill="#274b40" font-family="Arial,sans-serif" font-size="15" font-weight="700">S</text>
-      <text x="1131" y="842" text-anchor="middle" fill="#274b40" font-family="Arial,sans-serif" font-size="15" font-weight="700">W</text>
-
-      <rect x="70" y="920" width="650" height="34" rx="17" fill="#e8efe7"/>
-      <text x="92" y="943" fill="#486356" font-family="Arial,sans-serif" font-size="15">Suggested stages: ${stageNames.join(" · ")} · Route pattern generated for visual planning</text>
-
-      <rect x="740" y="920" width="290" height="34" rx="17" fill="#f4eadc"/>
-      <text x="760" y="943" fill="#8a5b34" font-family="Arial,sans-serif" font-size="15" font-weight="700">Not for navigation · Coordinate with your guide</text>
-
-      <rect x="70" y="728" width="274" height="150" rx="18" fill="#ffffff" fill-opacity="0.94" stroke="#d5ddd7" stroke-width="2"/>
-      <text x="94" y="762" fill="#355f52" font-family="Arial,sans-serif" font-size="20" font-weight="700">Elevation Profile</text>
-      <polyline points="82,846 315,846" fill="none" stroke="#ccd7cf" stroke-width="2"/>
-      <polyline points="82,790 315,790" fill="none" stroke="#e0e7e1" stroke-width="1.5"/>
-      <polyline points="82,734 315,734" fill="none" stroke="#e0e7e1" stroke-width="1.5"/>
-      <polyline points="${profilePoints}" fill="none" stroke="#c96a3d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-      <text x="96" y="870" fill="#63716b" font-family="Arial,sans-serif" font-size="13">0 km</text>
-      <text x="294" y="870" text-anchor="end" fill="#63716b" font-family="Arial,sans-serif" font-size="13">${esc(String(safeDistance))} km</text>
-      <text x="92" y="807" fill="#6b7771" font-family="Arial,sans-serif" font-size="12">mid</text>
-      <text x="92" y="751" fill="#6b7771" font-family="Arial,sans-serif" font-size="12">high</text>
-
-      <rect x="362" y="728" width="320" height="150" rx="18" fill="#ffffff" fill-opacity="0.94" stroke="#d5ddd7" stroke-width="2"/>
-      <text x="386" y="762" fill="#355f52" font-family="Arial,sans-serif" font-size="20" font-weight="700">Quick Notes</text>
-      <text x="386" y="797" fill="#3d4b46" font-family="Arial,sans-serif" font-size="15">• Scenic route with marked waypoints and flexible pacing.</text>
-      <text x="386" y="827" fill="#3d4b46" font-family="Arial,sans-serif" font-size="15">• Best used as a visual trip reference for the booking.</text>
-      <text x="386" y="857" fill="#3d4b46" font-family="Arial,sans-serif" font-size="15">• Final trail movement still depends on guide direction.</text>
+      <rect x="87" y="287" width="213" height="42" rx="21" fill="#ffffff" fill-opacity=".91"/>
+      <text x="110" y="314" fill="#305e49" font-family="Arial,sans-serif" font-size="17" font-weight="700">SAMPLE ROUTE · NOT GPS</text>
+      <rect x="88" y="694" width="230" height="62" rx="14" fill="#fff" fill-opacity=".95"/>
+      <circle cx="112" cy="716" r="7" fill="#295948"/>
+      <text x="130" y="721" fill="#315a49" font-family="Arial,sans-serif" font-size="15">Start / trailhead</text>
+      <circle cx="112" cy="740" r="7" fill="#c27848"/>
+      <text x="130" y="745" fill="#315a49" font-family="Arial,sans-serif" font-size="15">End / finish</text>
+      <rect x="985" y="251" width="344" height="527" rx="20" fill="#fff" stroke="#d6ddd6" stroke-width="2"/>
+      <text x="1010" y="292" fill="#2b5d46" font-family="Arial,sans-serif" font-size="23" font-weight="700">Your hike details</text>
+      ${facts}
+      <rect x="70" y="802" width="1259" height="130" rx="18" fill="#eff4ee" stroke="#d4e0d5" stroke-width="2"/>
+      <text x="96" y="839" fill="#2d5e49" font-family="Arial,sans-serif" font-size="19" font-weight="700">BOOKED TRAIL LOCATION</text>
+      ${svgBookingText(t.location || "Location not specified", 96, 875, 65, 1, 22)}
+      <text x="96" y="910" fill="#576c60" font-family="Arial,sans-serif" font-size="17">Map link in the booking viewer uses this trail's recorded area.</text>
+      <text x="70" y="968" fill="#637268" font-family="Arial,sans-serif" font-size="15">Decorative route only. Exact path and meeting location must be verified with your hiking guide.</text>
     </svg>`;
   }
-  function downloadTrailMap(t, h) {
-    const svg = trailDownloadSvg(t, h);
+  function downloadTrailMap(t, h, b) {
+    const svg = trailDownloadSvg(t, h, b);
     const source = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
     const svgUrl = URL.createObjectURL(source);
     const filename = `Kalinga-Trails-${
@@ -654,7 +647,7 @@
         .normalize("NFKD")
         .replace(/[^a-z0-9]+/gi, "-")
         .replace(/^-|-$/g, "") || "Trail"
-    }-Map`;
+    }-Booking-${b?.id ?? "Map"}`;
     const saveFile = (fileUrl, extension) => {
       const link = document.createElement("a");
       link.href = fileUrl;
@@ -685,7 +678,7 @@
             URL.revokeObjectURL(pngUrl);
             URL.revokeObjectURL(svgUrl);
           }, 3000);
-          toast("Trail map downloaded as PNG.");
+          toast("Booking trail map downloaded as PNG.");
         }, "image/png");
       } catch {
         fallback();
@@ -726,8 +719,8 @@
     const host = $("#booking-app");
     if (!host) return;
     if (!guard("hiker")) return;
-    const h = hike(Number(new URLSearchParams(location.search).get("hike"))),
-      t = h && trail(h.trailId);
+    const h = hike(Number(new URLSearchParams(location.search).get("hike")));
+    const t = h && trail(h.trailId);
     if (!t || h.status !== "active") {
       host.innerHTML = panel(
         "Unavailable",
@@ -736,39 +729,166 @@
       return;
     }
     const free = slots(h);
-    host.innerHTML = panel(
-      "Booking confirmation",
-      `<p><strong>${esc(t.name)}</strong> · ${fullDate(h.date)} · ${esc(t.meeting)}</p><p>${free} slot(s) available. Bookings remain pending until an administrator confirms them. Put your account name first in the participant list. Only the account holder's guide-verified completion affects this profile.</p>${!free ? empty("Fully booked. Please choose another hike.") : `<form id="book-form"><div class="kt-fields">${field("Number of participants", "count", "number", 1, `min="1" max="${free}" required`)}<label class="kt-field kt-full">Participant names (one per line)<textarea name="participants" required rows="3" placeholder="One full name per participant">${esc(me().name)}</textarea></label>${field("Contact phone", "phone", "tel", "", 'required minlength="7"')}${field("Emergency contact name", "emergencyName", "text", "", "required")}${field("Emergency contact phone", "emergencyPhone", "tel", "", 'required minlength="7"')}<label class="kt-field kt-full">Health declaration (demo only — do not enter sensitive medical details)<select name="health" required><option value="">Select an answer</option><option value="declared">I will inform the guide privately of any relevant concerns</option><option value="none">No concerns to declare</option></select></label><label class="kt-field kt-full">Additional notes<textarea name="notes" rows="3" maxlength="500" placeholder="Optional scheduling or accessibility notes"></textarea></label></div><label class="kt-check"><input type="checkbox" required name="agree"> I understand guide instructions and the cancellation policy.</label><button class="btn btn-primary" type="submit">Confirm Booking Request</button></form>`}`,
+    const details = `<div class="kt-lz-book-snapshot d-flex flex-wrap justify-content-between align-items-start gap-3">
+      <div><p class="kt-lz-overline">Your selected adventure</p><h3>${esc(t.name)}</h3><p>${esc(t.location)} · ${esc(fullDate(h.date))}</p></div>
+      <span class="kt-lz-count-pill">${esc(String(free))} spots remaining</span>
+    </div>`;
+    if (free <= 0) {
+      host.innerHTML = panel(
+        "Hike request",
+        details + empty("Fully booked. Please choose another hike."),
+      );
+      return;
+    }
+    host.innerHTML = `<section class="kt-panel kt-lz-book-panel">
+      <div class="kt-lz-book-header"><p class="kt-lz-overline">Your adventure starts here</p><h2>Request your booking</h2><p>Three short steps. Your request is <strong>pending approval</strong> until an administrator confirms it.</p></div>
+      ${details}
+      <ol class="kt-lz-steps" aria-label="Booking steps">
+        <li class="is-current" data-book-indicator="1" aria-current="step"><span>1</span><strong>Hike Summary</strong></li>
+        <li data-book-indicator="2"><span>2</span><strong>Participant Details</strong></li>
+        <li data-book-indicator="3"><span>3</span><strong>Review Request</strong></li>
+      </ol>
+      <form id="book-form" novalidate>
+        <fieldset class="kt-lz-book-step" data-book-step="1">
+          <legend>Step 1 · Your hike</legend>
+          <p class="kt-muted">Confirm the scheduled hike and how many people will join.</p>
+          <div class="kt-lz-hike-summary row g-3">
+            <div class="col-6 col-lg-3"><small>Difficulty</small><strong>${esc(t.difficulty)}</strong></div>
+            <div class="col-6 col-lg-3"><small>Distance</small><strong>${esc(String(t.distance))} km</strong></div>
+            <div class="col-6 col-lg-3"><small>Duration</small><strong>${esc(t.duration)}</strong></div>
+            <div class="col-6 col-lg-3"><small>Meeting point</small><strong>${esc(t.meeting)}</strong></div>
+          </div>
+          <div class="kt-lz-book-count"><label class="kt-field" for="kt-lz-participant-count">Number of participants <input id="kt-lz-participant-count" name="count" type="number" value="1" min="1" max="${free}" required /></label><p class="kt-muted">Available spaces: ${free}. You count as the first participant.</p></div>
+        </fieldset>
+        <fieldset class="kt-lz-book-step" data-book-step="2" hidden>
+          <legend>Step 2 · Participant details</legend>
+          <p class="kt-muted">We've filled in your name. Enter the remaining participants individually.</p>
+          <div id="kt-lz-participants" class="kt-lz-participant-list"></div>
+          <div class="kt-fields">
+            ${field("Contact phone", "phone", "tel", me().phone || "", 'required minlength="7" autocomplete="tel"')}
+            ${field("Emergency contact name", "emergencyName", "text", "", 'required minlength="2"')}
+            ${field("Emergency contact phone", "emergencyPhone", "tel", "", 'required minlength="7"')}
+          </div>
+        </fieldset>
+        <fieldset class="kt-lz-book-step" data-book-step="3" hidden>
+          <legend>Step 3 · Review request</legend>
+          <div class="kt-lz-review" id="kt-lz-book-review"></div>
+          <div class="kt-fields">
+            <label class="kt-field kt-full">Health declaration (demo only — do not enter sensitive medical details)
+              <select name="health" required><option value="">Choose a response</option><option value="declared">I will privately inform the guide of relevant concerns</option><option value="none">No concerns to declare</option></select>
+            </label>
+            <label class="kt-field kt-full">Additional notes (optional)<textarea name="notes" rows="3" maxlength="500" placeholder="Scheduling or accessibility notes"></textarea></label>
+          </div>
+          <label class="kt-check"><input type="checkbox" required name="agree"> I understand the guide instructions and cancellation policy.</label>
+          <p class="kt-lz-pending-note">Your booking will show as <strong>Pending Approval</strong> after submission. You will receive a notification when it is reviewed.</p>
+        </fieldset>
+        <div class="kt-lz-book-controls d-flex justify-content-between flex-wrap gap-2">
+          <button class="btn btn-outline" type="button" id="kt-lz-book-back" hidden>Back</button>
+          <button class="btn btn-primary" type="button" id="kt-lz-book-next">Continue <span aria-hidden="true">→</span></button>
+          <button class="btn btn-primary" type="submit" id="kt-lz-book-submit" hidden>Submit booking request</button>
+        </div>
+      </form>
+    </section>`;
+    const form = $("#book-form");
+    const countField = $("#kt-lz-participant-count", form);
+    const participantHost = $("#kt-lz-participants", form);
+    let step = 1;
+    function createParticipants() {
+      const count = Number(countField.value);
+      if (!Number.isInteger(count) || count < 1 || count > slots(h)) return;
+      const existing = $$("input[name=participantName]", participantHost).map(
+        (input) => input.value,
+      );
+      participantHost.innerHTML = Array.from(
+        { length: count },
+        (_, index) =>
+          `<label class="kt-lz-person-row kt-field"><span>Participant ${index + 1}${index === 0 ? " · Account holder" : ""}</span><input type="text" name="participantName" value="${esc(index === 0 ? me().name : existing[index] || "")}" minlength="2" maxlength="90" ${index === 0 ? "readonly" : "required"} aria-label="Participant ${index + 1} name" /></label>`,
+      ).join("");
+    }
+    createParticipants();
+    countField.addEventListener("change", createParticipants);
+    countField.addEventListener("input", createParticipants);
+    function validateStep(currentStep) {
+      const inputs = $$(
+        `[data-book-step="${currentStep}"] input, [data-book-step="${currentStep}"] select, [data-book-step="${currentStep}"] textarea`,
+        form,
+      );
+      const invalid = inputs.find((input) => !input.checkValidity());
+      if (invalid) {
+        invalid.reportValidity();
+        invalid.focus();
+        return false;
+      }
+      if (currentStep === 1) {
+        const count = Number(countField.value);
+        if (!Number.isInteger(count) || count < 1 || count > slots(h))
+          return (
+            toast("Please choose a valid participant count.", true),
+            false
+          );
+        createParticipants();
+      }
+      return true;
+    }
+    function showStep(nextStep) {
+      step = nextStep;
+      $$("[data-book-step]", form).forEach((section) => {
+        section.hidden = Number(section.dataset.bookStep) !== step;
+      });
+      $$("[data-book-indicator]").forEach((item) => {
+        const number = Number(item.dataset.bookIndicator);
+        item.classList.toggle("is-current", number === step);
+        item.classList.toggle("is-complete", number < step);
+        if (number === step) item.setAttribute("aria-current", "step");
+        else item.removeAttribute("aria-current");
+      });
+      $("#kt-lz-book-back").hidden = step === 1;
+      $("#kt-lz-book-next").hidden = step === 3;
+      $("#kt-lz-book-submit").hidden = step !== 3;
+      if (step === 3) {
+        const names = $$("input[name=participantName]", form).map((input) =>
+          input.value.trim(),
+        );
+        $("#kt-lz-book-review").innerHTML =
+          `<h3>Check your details</h3><dl><div><dt>Hike</dt><dd>${esc(t.name)}</dd></div><div><dt>Date</dt><dd>${esc(fullDate(h.date))}</dd></div><div><dt>Participants</dt><dd>${names.map(esc).join(" · ")}</dd></div><div><dt>Contact</dt><dd>${esc(form.elements.phone.value.trim())}</dd></div><div><dt>Emergency contact</dt><dd>${esc(form.elements.emergencyName.value.trim())} · ${esc(form.elements.emergencyPhone.value.trim())}</dd></div></dl>`;
+      }
+      $("[data-book-step]:not([hidden]) legend", form)?.focus?.();
+    }
+    $("#kt-lz-book-next").addEventListener("click", () => {
+      if (!validateStep(step)) return;
+      showStep(Math.min(3, step + 1));
+    });
+    $("#kt-lz-book-back").addEventListener("click", () =>
+      showStep(Math.max(1, step - 1)),
     );
-    $("#book-form")?.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const v = formValues(e.target),
-        names = v.participants
-          .split("\n")
-          .map((n) => n.trim())
-          .filter(Boolean),
-        count = Number(v.count);
-      if (!e.target.reportValidity()) return;
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (
+        step !== 3 ||
+        !validateStep(1) ||
+        !validateStep(2) ||
+        !validateStep(3)
+      )
+        return;
+      const v = formValues(form);
+      const names = $$("input[name=participantName]", form).map((input) =>
+        input.value.trim(),
+      );
+      const count = Number(countField.value);
       if (h.date < today()) return toast("You cannot book a past hike.", true);
       if (!Number.isInteger(count) || count < 1 || count > slots(h))
         return toast("Not enough remaining slots.", true);
-      if (names.length !== count || names.some((n) => n.length < 2))
-        return toast(
-          "Provide exactly one valid participant name per line.",
-          true,
-        );
+      if (names.length !== count || names.some((name) => name.length < 2))
+        return toast("Provide a valid name for each participant.", true);
       if (names[0].toLocaleLowerCase() !== me().name.toLocaleLowerCase())
-        return toast(
-          "The first participant must be the account holder. Other participants do not earn account progress.",
-          true,
-        );
+        return toast("The first participant must be the account holder.", true);
       const b = {
         id: next(),
         userId: me().id,
         hikeId: h.id,
-        participants: names.map((n, i) => ({
-          name: n,
-          accountUserId: i === 0 ? me().id : null,
+        participants: names.map((name, index) => ({
+          name,
+          accountUserId: index === 0 ? me().id : null,
           attendance: "pending",
           completion: "pending",
         })),
@@ -788,8 +908,10 @@
         `Booking #${b.id} requested for ${t.name}. Awaiting administrator confirmation.`,
       );
       state.users
-        .filter((u) => u.role === "admin")
-        .forEach((u) => notice(u.id, `New booking #${b.id} for ${t.name}.`));
+        .filter((user) => user.role === "admin")
+        .forEach((user) =>
+          notice(user.id, `New booking #${b.id} for ${t.name}.`),
+        );
       save();
       location.href = "dashboard.html?tab=bookings";
     });
@@ -814,32 +936,47 @@
     return state.achievements.map((a) => ({ ...a, earned: n >= a.count }));
   }
   function myBookings(u) {
-    const list = state.bookings.filter((b) => b.userId === u.id);
-    return panel(
-      "My Bookings",
-      list.length
-        ? list
-            .map((b) => {
-              const h = hike(b.hikeId);
-              const mapButton =
-                b.status === "confirmed" && h && trail(h.trailId)
+    const list = state.bookings
+      .filter((b) => b.userId === u.id)
+      .slice()
+      .reverse();
+    return `<section class="kt-panel kt-lz-bookings-panel"><div class="kt-lz-panel-top d-flex flex-wrap justify-content-between align-items-center gap-3"><div><p class="kt-lz-overline">Your reservations</p><h2>My Bookings</h2></div><a class="btn btn-outline" href="trails.html">Explore more trails</a></div>
+      ${
+        list.length
+          ? `<div class="kt-lz-booking-list">${list
+              .map((b) => {
+                const h = hike(b.hikeId),
+                  t = h && trail(h.trailId);
+                const mapButton =
+                  b.status === "confirmed" && t
+                    ? btn(
+                        "view-map",
+                        "View Map",
+                        b.id,
+                        "btn btn-primary kt-view-map-btn",
+                      )
+                    : "";
+                const cancelButton = ["pending", "confirmed"].includes(b.status)
                   ? btn(
-                      "view-map",
-                      "View Map",
+                      "cancel-booking",
+                      "Cancel booking",
                       b.id,
-                      "btn btn-primary kt-view-map-btn",
+                      "btn btn-secondary",
                     )
                   : "";
-              const cancelButton = ["pending", "confirmed"].includes(b.status)
-                ? btn("cancel-booking", "Cancel booking", b.id)
-                : "";
-              return `<article class="kt-item kt-my-booking"><div><strong>#${b.id} · ${esc(hikeTitle(h))}</strong><p>${fullDate(h?.date)} · ${b.participants.length} participant(s) · ${badge(b.status)}</p><p>Emergency contact: ${esc(b.emergencyName)} (${esc(b.emergencyPhone)})</p><p>Health declaration: ${esc(b.health)} · Notes: ${esc(b.notes || "None")}</p></div><div class="kt-actions kt-my-booking-actions">${mapButton}${cancelButton}</div></article>`;
-            })
-            .join("")
-        : empty(
-            'You have no bookings yet. <a href="trails.html">Explore hikes</a>.',
-          ),
-    );
+                const stateLabel =
+                  b.status === "pending"
+                    ? "Pending Approval"
+                    : b.status.charAt(0).toUpperCase() + b.status.slice(1);
+                return `<article class="kt-lz-booking-card"><div class="kt-lz-booking-card-head d-flex align-items-start flex-wrap justify-content-between gap-2"><div><span class="kt-lz-small-label">Booking #${esc(b.id)}</span><h3>${esc(hikeTitle(h))}</h3><p>${esc(t?.location || "Location unavailable")}</p></div><span class="kt-lz-status kt-lz-status-${esc(b.status)}">${esc(stateLabel)}</span></div>
+          <div class="kt-lz-booking-details row g-3"><div class="col-6 col-lg-3"><small>Date</small><strong>${esc(fullDate(h?.date))}</strong></div><div class="col-6 col-lg-3"><small>Participants</small><strong>${b.participants.length}</strong></div><div class="col-6 col-lg-3"><small>Guide</small><strong>${esc(who(h?.guideId)?.name || "To be assigned")}</strong></div><div class="col-6 col-lg-3"><small>Meeting point</small><strong>${esc(t?.meeting || "To be announced")}</strong></div></div>
+          <div class="kt-lz-booking-actions d-flex flex-wrap justify-content-between align-items-center gap-2"><span class="kt-muted">${b.status === "pending" ? "Waiting for administrator review" : b.status === "confirmed" ? "Your hike is confirmed. Review the map before departure." : "Booking no longer active"}</span><div class="kt-actions kt-my-booking-actions">${mapButton}${cancelButton}</div></div>
+        </article>`;
+              })
+              .join("")}</div>`
+          : `<div class="kt-lz-no-bookings"><span aria-hidden="true">⛰</span><h3>Your trail adventures start here</h3><p>Browse available hikes and send a booking request.</p><a href="trails.html" class="btn btn-primary">Find a hike</a></div>`
+      }
+    </section>`;
   }
   function myProfile(u) {
     return panel(
@@ -899,16 +1036,12 @@
     );
   }
   function notificationsPane(u) {
-    return panel(
-      "Notifications",
-      state.notifications
-        .filter((n) => n.userId === u.id)
-        .map(
-          (n) =>
-            `<div class="kt-item"><p>${esc(n.message)}<small class="kt-muted"> · ${fullDate(n.date.slice(0, 10))}</small></p>${!n.read ? btn("read-notification", "Mark read", n.id) : badge("Read")}</div>`,
-        )
-        .join("") || empty("No notifications."),
-    );
+    const items = state.notifications.filter((n) => n.userId === u.id);
+    const unread = items.filter((n) => !n.read).length;
+    return `<section class="kt-panel kt-lz-notifications-panel">
+      <div class="kt-lz-panel-top d-flex flex-wrap justify-content-between align-items-center gap-3"><div><p class="kt-lz-overline">Stay in the loop</p><h2>Notifications</h2><p class="kt-muted">${unread ? `${unread} unread update${unread === 1 ? "" : "s"}` : "You're all caught up"}</p></div>${unread ? btn("read-all-notifications", "Mark all as read", "", "btn btn-outline") : ""}</div>
+      <div class="kt-lz-notification-list">${items.length ? items.map((n) => `<article class="kt-lz-notification ${!n.read ? "is-unread" : ""}"><span class="kt-lz-notification-dot" aria-hidden="true"></span><div><p>${esc(n.message)}</p><small class="kt-muted">${esc(fullDate(n.date.slice(0, 10)))}</small></div>${!n.read ? btn("read-notification", "Mark read", n.id, "btn btn-secondary") : '<span class="kt-lz-small-label">Read</span>'}</article>`).join("") : `<div class="kt-lz-no-bookings"><h3>All clear</h3><p>Your booking updates and community alerts will appear here.</p></div>`}</div>
+    </section>`;
   }
   function hikerPane(tab, u) {
     const done = completed(u),
@@ -950,16 +1083,20 @@
       );
     if (tab === "friends") return communityPane(u);
     if (tab === "notifications") return notificationsPane(u);
-    return panel(
-      "Hiker Dashboard",
-      stats([
-        [
-          "Upcoming bookings",
-          state.bookings.filter(
-            (b) =>
-              b.userId === u.id && ["pending", "confirmed"].includes(b.status),
-          ).length,
-        ],
+    const upcoming = state.bookings
+      .filter(
+        (b) => b.userId === u.id && ["pending", "confirmed"].includes(b.status),
+      )
+      .slice()
+      .sort((first, second) =>
+        (hike(first.hikeId)?.date || "").localeCompare(
+          hike(second.hikeId)?.date || "",
+        ),
+      );
+    return `<section class="kt-panel kt-lz-overview-panel">
+      <div class="kt-lz-panel-top"><p class="kt-lz-overline">Your trail companion</p><h2>Welcome back, ${esc(u.name)}!</h2><p class="kt-muted">Everything you need for your next adventure, in one place.</p></div>
+      ${stats([
+        ["Upcoming bookings", upcoming.length],
         ["Completed hikes", done.length],
         ["Achievements", accomplishments(u).filter((a) => a.earned).length],
         [
@@ -969,9 +1106,21 @@
               f.status === "accepted" && (f.to === u.id || f.from === u.id),
           ).length,
         ],
-      ]) +
-        `<p>Welcome, ${esc(u.name)}! Browse upcoming adventures or review your bookings and progress.</p><div class="kt-actions"><a href="trails.html" class="btn btn-primary">Explore Hikes</a><a href="dashboard.html?tab=bookings" class="btn btn-secondary">My Bookings</a></div>`,
-    );
+      ])}
+      <div class="kt-lz-upcoming-head d-flex justify-content-between align-items-center flex-wrap gap-2"><h3>Upcoming hikes</h3><a href="dashboard.html?tab=bookings">View all bookings →</a></div>
+      ${
+        upcoming.length
+          ? `<div class="kt-lz-upcoming-list">${upcoming
+              .slice(0, 3)
+              .map(
+                (b) =>
+                  `<a class="kt-lz-upcoming-card" href="dashboard.html?tab=bookings"><div><span class="kt-lz-small-label">${esc(fullDate(hike(b.hikeId)?.date))}</span><h4>${esc(hikeTitle(hike(b.hikeId)))}</h4><p>${esc(trail(hike(b.hikeId)?.trailId)?.location || "")}</p></div><span class="kt-lz-status kt-lz-status-${esc(b.status)}">${b.status === "pending" ? "Pending Approval" : "Confirmed"}</span></a>`,
+              )
+              .join("")}</div>`
+          : `<div class="kt-lz-empty-overview"><span aria-hidden="true">⛰</span><div><h4>No upcoming hikes yet</h4><p>Browse trails to find your next guided adventure.</p></div></div>`
+      }
+      <div class="kt-actions kt-lz-dashboard-actions"><a href="trails.html" class="btn btn-primary">Explore Hikes</a><a href="dashboard.html?tab=bookings" class="btn btn-secondary">My Bookings</a></div>
+    </section>`;
   }
   function guidePane(tab, u) {
     const assigned = state.hikes.filter((h) => h.guideId === u.id);
@@ -1316,11 +1465,13 @@
     if (!host) return;
     if (!guard()) return;
     const u = me();
+    const bootstrap = document.querySelector("link[data-lz-bootstrap]");
+    if (bootstrap) bootstrap.media = u.role === "hiker" ? "all" : "not all";
     setDashboardHeading(u);
     const tabs = tabConfig[u.role],
       requested = new URLSearchParams(location.search).get("tab") || "overview",
       tab = tabs.some((x) => x[0] === requested) ? requested : "overview";
-    host.innerHTML = `<div class="kt-dashboard"><aside class="kt-sidebar"><div class="kt-user"><strong>${esc(u.name)}</strong><p>${esc(u.role.toUpperCase())}</p></div><label class="kt-mobile-section-control" for="kt-mobile-section"><span>Dashboard section</span><select id="kt-mobile-section" aria-label="Choose dashboard section">${tabs.map(([slug, name]) => `<option value="${slug}" ${slug === tab ? "selected" : ""}>${esc(name)}</option>`).join("")}</select></label><nav aria-label="Dashboard sections">${tabs.map(([slug, name]) => `<a class="${slug === tab ? "selected" : ""}" ${slug === tab ? 'aria-current="page"' : ""} href="dashboard.html?tab=${slug}">${esc(name)}${slug === "notifications" ? ` (${state.notifications.filter((n) => n.userId === u.id && !n.read).length})` : ""}</a>`).join("")}</nav></aside><div class="kt-dashboard-content">${u.role === "hiker" ? hikerPane(tab, u) : u.role === "guide" ? guidePane(tab, u) : adminPane(tab, u)}</div></div>`;
+    host.innerHTML = `<div class="kt-dashboard ${u.role === "hiker" ? "kt-lz-hiker-dashboard" : ""}"><aside class="kt-sidebar"><div class="kt-user"><strong>${esc(u.name)}</strong><p>${esc(u.role.toUpperCase())}</p></div><label class="kt-mobile-section-control" for="kt-mobile-section"><span>Dashboard section</span><select id="kt-mobile-section" aria-label="Choose dashboard section">${tabs.map(([slug, name]) => `<option value="${slug}" ${slug === tab ? "selected" : ""}>${esc(name)}</option>`).join("")}</select></label><nav aria-label="Dashboard sections">${tabs.map(([slug, name]) => `<a class="${slug === tab ? "selected" : ""}" ${slug === tab ? 'aria-current="page"' : ""} href="dashboard.html?tab=${slug}">${esc(name)}${slug === "notifications" ? ` (${state.notifications.filter((n) => n.userId === u.id && !n.read).length})` : ""}</a>`).join("")}</nav></aside><div class="kt-dashboard-content">${u.role === "hiker" ? hikerPane(tab, u) : u.role === "guide" ? guidePane(tab, u) : adminPane(tab, u)}</div></div>`;
     bindForms();
   }
   function dashboardTabUrl(tab, bookingId = null, hikeId = null) {
@@ -1561,7 +1712,7 @@
     );
   }
   // The map overview is unlocked only for this account's confirmed booking.
-  // Route/terrain geometry is illustrative because this demo has no GPS tracks.
+  // Route/terrain geometry is generated because this demo has no GPS tracks.
   function viewConfirmedBookingMap(bookingId) {
     const u = me();
     const b = state.bookings.find((entry) => entry.id === Number(bookingId));
@@ -1582,30 +1733,57 @@
     if (!h || !t)
       return toast("Map information is unavailable for this hike.", true);
 
+    const locationQuery = googleTrailSearch(t);
     const mapSearch =
       "https://www.google.com/maps/search/?api=1&query=" +
-      encodeURIComponent(`${t.name}, ${t.location}, Philippines`);
-    modal(`<section class="kt-confirmed-map" aria-labelledby="kt-confirmed-map-title">
+      encodeURIComponent(locationQuery);
+    const sceneryPhoto = mapPhotoForBooking(t, h, b);
+    const guideName = who(h.guideId)?.name || "To be assigned";
+    const details = [
+      ["Hike date", fullDate(h.date)],
+      ["Difficulty", t.difficulty],
+      ["Distance", `${t.distance} km`],
+      ["Elevation", `${t.elevation} m`],
+      ["Duration", t.duration],
+      ["Participants", String(b.participants.length)],
+      ["Assigned guide", guideName],
+      ["Meeting point", t.meeting],
+    ];
+    const facts = details
+      .map(
+        ([key, value]) =>
+          `<div class="kt-booked-map-fact"><dt>${esc(key)}</dt><dd>${esc(value || "Not specified")}</dd></div>`,
+      )
+      .join("");
+    modal(
+      `<section class="kt-confirmed-map" aria-labelledby="kt-confirmed-map-title">
       <div class="kt-trail-map-heading">
         <p class="kt-trail-map-eyebrow">Confirmed booking #${esc(b.id)}</p>
         <h2 id="kt-confirmed-map-title">${esc(t.name)} — View Map</h2>
         <p>${esc(t.location)} · ${esc(fullDate(h.date))}</p>
       </div>
-      <p class="kt-confirmed-map-intro">Explore the location online, or save the printable trail overview for your booking.</p>
+      <div class="kt-booked-map-photo">
+        <img src="${esc(sceneryPhoto)}" alt="Scenic preview photograph for ${esc(t.name)}" loading="eager">
+        <div class="kt-booked-map-photo-caption"><strong>${esc(t.name)}</strong></div>
+      </div>
+      <dl class="kt-booked-map-facts">${facts}</dl>
+      <p class="kt-confirmed-map-intro">Explore the location associated with your booked trail or download a scenic trail preview.</p>
       <div class="kt-trail-map-preview">${trailMapSvg(t, h)}</div>
-      <p class="kt-trail-map-warning"><strong>Important:</strong> The downloadable overview is illustrative, not an official trail route or a navigation map. No verified GPS data is provided; follow your guide for trail directions.</p>
+      <p class="kt-trail-map-warning"><strong>Important:</strong> This preview is not a GPS trail route. For fictional hike names, Google Maps opens the recorded destination area, not a verified trailhead. Confirm the actual route and meeting point with your guide.</p>
       <div class="kt-confirmed-map-actions">
         <button type="button" class="btn btn-primary" id="kt-download-confirmed-map">Download Map Overview (PNG)</button>
         <a class="btn btn-secondary" href="${esc(mapSearch)}" target="_blank" rel="noopener noreferrer">Open Location in Google Maps</a>
       </div>
-    </section>`);
+    </section>`,
+      "kt-confirmed-map-dialog",
+    );
     const root = $("#kt-modal");
     $("#kt-download-confirmed-map", root)?.addEventListener("click", () => {
       const current = me();
       const activeBooking = state.bookings.find((entry) => entry.id === b.id);
       if (current?.id !== b.userId || activeBooking?.status !== "confirmed")
         return toast("This booking is not currently confirmed.", true);
-      downloadTrailMap(t, h);
+      downloadTrailMap(t, h, b);
     });
   }
   function action(name, id) {
@@ -1762,6 +1940,17 @@
         if (p.userId !== u.id)
           notice(p.userId, `${u.name} gave your post kudos.`);
       } else state.kudos.splice(ix, 1);
+    }
+    if (name === "read-all-notifications" && u.role === "hiker") {
+      state.notifications
+        .filter((entry) => entry.userId === u.id)
+        .forEach((entry) => {
+          entry.read = true;
+        });
+      save();
+      renderDashboard();
+      toast("All notifications marked as read.");
+      return;
     }
     if (name === "read-notification") {
       const n = state.notifications.find(
@@ -1969,9 +2158,34 @@
     if ($("#kt-trail-list")) renderTrails();
     if ($("#kt-detail")) renderDetail();
   }
+  let lzCommunityFilter = "all";
   function renderCommunity() {
     const target = $("#kt-community-posts");
-    if (target) target.innerHTML = feedPosts();
+    if (target) {
+      const posts = feedPosts();
+      target.innerHTML = posts;
+      if (lzCommunityFilter === "photos") {
+        $$(".kt-post-card", target).forEach((card) => {
+          card.hidden = !$(".kt-post-photo", card);
+        });
+        const visible = $$(".kt-post-card:not([hidden])", target).length;
+        if (!visible)
+          target.innerHTML = `<div class="kt-lz-feed-empty"><h3>No photo posts yet</h3><p>Try All posts to see every community story.</p></div>`;
+      }
+      const count = $("#kt-lz-community-count");
+      if (count) {
+        const visible =
+          lzCommunityFilter === "photos"
+            ? state.posts.filter((post) => !!post.photo).length
+            : state.posts.length;
+        count.textContent = `${visible} ${visible === 1 ? "story" : "stories"} in this view`;
+      }
+      $$("[data-lz-community-filter]").forEach((button) => {
+        const active = button.dataset.lzCommunityFilter === lzCommunityFilter;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
+    }
     $$(".kt-comment-form", target || document).forEach((f) =>
       f.addEventListener("submit", (e) => {
         e.preventDefault();
@@ -2036,6 +2250,10 @@
     root.classList.toggle(
       "kt-booking-dialog",
       extraClass === "kt-booking-dialog",
+    );
+    root.classList.toggle(
+      "kt-confirmed-map-dialog",
+      extraClass === "kt-confirmed-map-dialog",
     );
     root.innerHTML = `<button class="kt-modal-close" type="button" aria-label="Close viewer">×</button>${content}`;
     $(".kt-modal-close", root).onclick = () => root.close();
@@ -2140,6 +2358,19 @@
     $("#difficulty-filter")?.addEventListener("change", renderTrails);
     $("#location-filter")?.addEventListener("input", renderTrails);
     $("#date-filter")?.addEventListener("change", renderTrails);
+    $("#kt-lz-clear-filters")?.addEventListener("click", () => {
+      $("#difficulty-filter").value = "";
+      $("#location-filter").value = "";
+      $("#date-filter").value = "";
+      renderTrails();
+      $("#difficulty-filter")?.focus();
+    });
+    $$("[data-lz-community-filter]").forEach((button) =>
+      button.addEventListener("click", () => {
+        lzCommunityFilter = button.dataset.lzCommunityFilter;
+        renderCommunity();
+      }),
+    );
     $("#gallery-category")?.addEventListener("change", renderGallery);
     document.addEventListener("click", (e) => {
       const el = e.target.closest("[data-action]");

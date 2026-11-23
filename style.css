@@ -2752,3 +2752,179 @@ main,
     width: 100%;
   }
 }
+
+/* Scoped booking-map layout: keeps all other pages / dialogs untouched. */
+.kt-modal.kt-confirmed-map-dialog {
+  box-sizing: border-box;
+  width: min(960px, calc(100vw - 24px));
+  max-width: min(960px, calc(100vw - 24px));
+  max-height: min(92dvh, 960px);
+  margin: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: clamp(14px, 2.6vw, 28px);
+}
+.kt-confirmed-map-dialog .kt-modal-close {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  float: right;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 3px 12px #0002;
+}
+.kt-confirmed-map {
+  min-width: 0;
+  clear: both;
+  padding: 0;
+}
+.kt-confirmed-map * {
+  box-sizing: border-box;
+}
+.kt-confirmed-map p {
+  padding-top: 0;
+}
+.kt-confirmed-map .kt-trail-map-heading {
+  padding-right: 0;
+  min-width: 0;
+}
+.kt-confirmed-map .kt-trail-map-heading h2 {
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+.kt-confirmed-map .kt-trail-map-heading p {
+  overflow-wrap: anywhere;
+}
+.kt-booked-map-photo {
+  position: relative;
+  width: 100%;
+  height: clamp(155px, 24vw, 245px);
+  margin-top: 18px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: linear-gradient(135deg, #416b52, #90b9a2);
+}
+.kt-booked-map-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.kt-booked-map-photo-caption {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px 20px;
+  flex-wrap: wrap;
+  width: 100%;
+  padding: 30px 18px 14px;
+  background: linear-gradient(transparent, rgba(10, 30, 21, 0.83));
+  color: #fff;
+  font-size: 0.84rem;
+}
+.kt-booked-map-photo-caption strong {
+  font-size: clamp(0.95rem, 1.6vw, 1.12rem);
+  overflow-wrap: anywhere;
+}
+.kt-booked-map-photo-caption span {
+  font-size: 0.82rem;
+}
+.kt-booked-map-facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  width: 100%;
+  margin: 16px 0;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  overflow: hidden;
+  background: #fff;
+}
+.kt-booked-map-fact {
+  min-width: 0;
+  padding: 14px 15px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.kt-booked-map-fact:nth-child(4n) {
+  border-right: 0;
+}
+.kt-booked-map-fact:nth-last-child(-n + 4) {
+  border-bottom: 0;
+}
+.kt-booked-map-fact dt {
+  margin: 0 0 5px;
+  font-size: 0.78rem;
+  color: #52675c;
+}
+.kt-booked-map-fact dd {
+  margin: 0;
+  font-size: 0.93rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+.kt-confirmed-map .kt-trail-map-preview {
+  width: 100%;
+  min-width: 0;
+  margin-top: 12px;
+}
+.kt-confirmed-map .kt-trail-map-preview svg {
+  max-width: 100%;
+  height: auto;
+}
+.kt-confirmed-map-actions {
+  width: 100%;
+  margin-top: 12px;
+}
+.kt-confirmed-map-actions .btn {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+@media (max-width: 750px) {
+  .kt-booked-map-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .kt-booked-map-fact:nth-child(4n) {
+    border-right: 1px solid var(--border);
+  }
+  .kt-booked-map-fact:nth-child(2n) {
+    border-right: 0;
+  }
+  .kt-booked-map-fact:nth-last-child(-n + 4) {
+    border-bottom: 1px solid var(--border);
+  }
+  .kt-booked-map-fact:nth-last-child(-n + 2) {
+    border-bottom: 0;
+  }
+}
+@media (max-width: 450px) {
+  .kt-modal.kt-confirmed-map-dialog {
+    padding: 14px;
+  }
+  .kt-booked-map-photo {
+    height: 175px;
+  }
+  .kt-booked-map-photo-caption {
+    display: block;
+  }
+  .kt-booked-map-photo-caption span {
+    display: block;
+    padding-top: 3px;
+  }
+  .kt-booked-map-fact {
+    padding: 12px;
+  }
+}

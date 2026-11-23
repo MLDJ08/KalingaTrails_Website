@@ -4,10 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Community | Kalinga Trails</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.9/dist/css/bootstrap.min.css"
+      integrity="sha384-yEPZ7jP9S0QKiUQ0m3jjsO4ProIW7wvR9gXkI7JOGa2XVsw53Yke2bsdkBbjmmiX"
+      crossorigin="anonymous"
+    />
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="enhancements.css" />
   </head>
-  <body class="community-page">
+  <body class="community-page kt-lz-page kt-lz-community-page">
     <header class="site-header">
       <nav class="navbar container">
         <a class="logo" href="index.html" aria-label="Kalinga Trails Home">
@@ -129,7 +135,47 @@
               </div>
             </div>
 
-            <div id="kt-community-posts" class="kt-post-list"></div>
+            <div
+              class="kt-lz-community-toolbar d-flex flex-wrap align-items-center justify-content-between gap-3"
+            >
+              <div>
+                <h3>From the trail</h3>
+                <p
+                  id="kt-lz-community-count"
+                  class="kt-muted"
+                  aria-live="polite"
+                >
+                  Recent community stories
+                </p>
+              </div>
+              <div
+                class="kt-lz-switch"
+                role="group"
+                aria-label="Filter community posts"
+              >
+                <button
+                  type="button"
+                  class="kt-lz-switch-btn active"
+                  data-lz-community-filter="all"
+                  aria-pressed="true"
+                >
+                  All posts
+                </button>
+                <button
+                  type="button"
+                  class="kt-lz-switch-btn"
+                  data-lz-community-filter="photos"
+                  aria-pressed="false"
+                >
+                  Photos
+                </button>
+              </div>
+            </div>
+            <div
+              id="kt-community-posts"
+              class="kt-post-list kt-lz-feed"
+              aria-live="polite"
+            ></div>
           </div>
 
           <aside class="kt-community-sidebar">

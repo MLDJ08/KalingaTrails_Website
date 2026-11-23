@@ -4,10 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Trails & Hikes | Kalinga Trails</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.9/dist/css/bootstrap.min.css"
+      integrity="sha384-yEPZ7jP9S0QKiUQ0m3jjsO4ProIW7wvR9gXkI7JOGa2XVsw53Yke2bsdkBbjmmiX"
+      crossorigin="anonymous"
+    />
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="enhancements.css" />
   </head>
-  <body>
+  <body class="kt-lz-page kt-lz-trails-page">
     <header class="site-header">
       <nav class="navbar container">
         <a class="logo" href="index.html" aria-label="Kalinga Trails Home">
@@ -100,25 +106,72 @@
       </section>
       <section class="section">
         <div class="container">
-          <div class="kt-filter-row">
-            <label
-              >Difficulty<select id="difficulty-filter">
-                <option value="">All difficulties</option>
-                <option>Easy</option>
-                <option>Moderate</option>
-                <option>Challenging</option>
-              </select></label
-            ><label
-              >Location<input
-                id="location-filter"
-                type="search"
-                placeholder="Search location" /></label
-            ><label>From date<input id="date-filter" type="date" /></label>
+          <div
+            class="kt-lz-discovery-heading d-flex flex-wrap align-items-end justify-content-between gap-3"
+          >
+            <div>
+              <p class="kt-lz-overline">Find your next trail</p>
+              <h2>Choose your adventure</h2>
+              <p class="kt-muted">
+                Explore upcoming hikes, compare routes, and request a spot.
+              </p>
+            </div>
+            <span
+              id="kt-lz-trail-count"
+              class="kt-lz-count-pill"
+              role="status"
+              aria-live="polite"
+              >Loading available hikes…</span
+            >
           </div>
-          <div class="cards" id="kt-trail-list"></div>
-          <p id="kt-no-results" hidden>
-            No scheduled hikes match your filters.
-          </p>
+          <div class="kt-lz-filter-shell">
+            <div class="kt-filter-row kt-lz-filter-row row g-3">
+              <label class="col-12 col-md-4"
+                >Difficulty<select
+                  id="difficulty-filter"
+                  aria-label="Filter hikes by difficulty"
+                >
+                  <option value="">All difficulties</option>
+                  <option>Easy</option>
+                  <option>Moderate</option>
+                  <option>Challenging</option>
+                </select></label
+              >
+              <label class="col-12 col-md-4"
+                >Location<input
+                  id="location-filter"
+                  type="search"
+                  placeholder="Search location"
+                  aria-label="Search trail location"
+              /></label>
+              <label class="col-12 col-md-4"
+                >From date<input
+                  id="date-filter"
+                  type="date"
+                  aria-label="Only show hikes on or after this date"
+              /></label>
+            </div>
+            <div
+              class="kt-lz-filter-footer d-flex flex-wrap justify-content-between align-items-center gap-2"
+            >
+              <span
+                >Tip: Start with difficulty, then narrow down by location or
+                date.</span
+              >
+              <button
+                id="kt-lz-clear-filters"
+                class="btn btn-outline"
+                type="button"
+              >
+                Clear filters
+              </button>
+            </div>
+          </div>
+          <div class="row g-4 kt-lz-trail-grid" id="kt-trail-list"></div>
+          <div id="kt-no-results" class="kt-lz-empty" hidden role="status">
+            <h3>No trails found</h3>
+            <p>Try a different difficulty, location, or date.</p>
+          </div>
         </div>
       </section>
     </main>
