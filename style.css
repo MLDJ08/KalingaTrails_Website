@@ -2752,3 +2752,226 @@ main,
     width: 100%;
   }
 }
+
+/* Company, gallery and contact page styles */
+.company-values {
+  background: #f0f3ed;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.company-values-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  padding-top: 24px;
+  padding-bottom: 24px;
+}
+
+.company-values-grid > div {
+  padding: 12px 16px;
+  border-left: 3px solid var(--forest);
+}
+
+.company-values-grid strong {
+  color: var(--forest);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.company-values-grid p {
+  color: #42534b;
+  font-size: .94rem;
+  line-height: 1.5;
+}
+
+.demo-note {
+  font-size: .88rem;
+  opacity: .9;
+  max-width: 680px;
+}
+
+.guide-role-label {
+  color: var(--forest);
+  font-weight: 700;
+  margin: 4px 0 10px;
+}
+
+.guide-profile-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 22px;
+  border: 1px solid var(--border);
+  background: white;
+  padding: 28px;
+  border-radius: 15px;
+  max-width: 780px;
+}
+
+.guide-profile-card p {
+  margin-bottom: 14px;
+}
+
+.guide-profile-avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 88px;
+  width: 88px;
+  height: 88px;
+  border-radius: 14px;
+  background: var(--forest);
+  color: white;
+  font: 700 1.6rem 'Poppins', sans-serif;
+}
+
+.demo-disclaimer {
+  background: #eff3f0;
+  color: #2d5147;
+  font-size: .92rem;
+  line-height: 1.6;
+  border-left: 3px solid var(--forest);
+  padding: 12px 14px;
+  margin: 18px 0;
+  border-radius: 0 8px 8px 0;
+}
+
+.gallery-count-label {
+  font-size: .9rem;
+  margin-bottom: 12px;
+  color: #48584c;
+}
+
+.section-intro {
+  margin: 12px 0 18px;
+}
+
+.company-contact-details {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.company-contact-details > div {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 10px;
+}
+
+.company-contact-details dt {
+  font-size: .8rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  font-weight: 700;
+  color: var(--forest);
+}
+
+.company-contact-details dd {
+  overflow-wrap: anywhere;
+  margin-top: 3px;
+}
+
+.faq-entry {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 0 15px;
+  margin-top: 10px;
+}
+
+.faq-entry summary {
+  cursor: pointer;
+  font-weight: 700;
+  padding: 14px 4px;
+  list-style-position: inside;
+}
+
+.faq-entry summary:focus-visible {
+  outline: 3px solid var(--mountain);
+  outline-offset: 2px;
+}
+
+.faq-entry p {
+  border-top: 1px solid var(--border);
+  padding: 12px 4px 17px;
+}
+
+.faq-entry a {
+  color: var(--forest);
+  text-decoration: underline;
+}
+
+.booking-policy-panel {
+  margin-top: 24px;
+  background: white;
+  border: 1px solid var(--border);
+  padding: 26px;
+  border-radius: 14px;
+}
+
+.booking-policy-panel h2 {
+  font-size: 1.45rem;
+}
+
+.booking-policy-panel h3 {
+  font-size: 1rem;
+  color: var(--forest);
+  margin: 19px 0 6px;
+}
+
+.booking-policy-panel p {
+  font-size: .95rem;
+}
+
+.form-feedback {
+  margin: 12px 0 0;
+  color: var(--forest);
+  font-weight: 700;
+  min-height: 1.5em;
+}
+
+.featured-hike-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
+  gap: 9px;
+  margin-top: 12px;
+}
+
+.featured-hike-options label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f1f5f2;
+  border: 1px solid var(--border);
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.featured-hike-options input {
+  width: auto;
+  accent-color: var(--forest);
+}
+
+.empty-state {
+  padding: 30px 15px;
+  background: white;
+  border-radius: 12px;
+  grid-column: 1 / -1;
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .company-values-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .guide-profile-card {
+    flex-direction: column;
+  }
+
+  .booking-policy-panel {
+    padding: 20px;
+  }
+
+}

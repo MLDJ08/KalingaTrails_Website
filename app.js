@@ -1233,7 +1233,7 @@
     if (tab === "content")
       return panel(
         "Website Content",
-        `<form id="admin-content-form">${field("Homepage headline", "headline", "text", state.content.headline, 'required maxlength="120"')}<button class="btn btn-primary">Update Homepage Text</button></form><h3>Gallery photographs</h3><form id="admin-gallery-form"><div class="kt-fields">${field("Caption", "caption", "text", "", "required")}${select(
+        `<form id="admin-content-form">${field("Homepage headline", "headline", "text", state.content.headline, 'required maxlength="120"')}<h3>Featured hikes (choose up to three)</h3><p class="kt-muted">These cards appear on the public homepage and link to the next active schedule for each trail.</p><div class="featured-hike-options">${state.trails.map((t) => `<label><input type="checkbox" name="featuredTrailId" value="${t.id}" ${state.content.featured.includes(t.id) ? "checked" : ""}> ${esc(t.name)}</label>`).join("")}</div><button class="btn btn-primary" type="submit">Save Website Content</button></form><h3>Gallery photographs</h3><form id="admin-gallery-form"><div class="kt-fields">${field("Caption", "caption", "text", "", "required")}${select(
           "Category",
           "category",
           [
@@ -1488,8 +1488,13 @@
       renderDashboard();
     });
     on("admin-content-form", (f, v) => {
+      const featured = new FormData(f).getAll("featuredTrailId").map(Number);
+      if (featured.length > 3)
+        return toast("Please choose no more than three featured hikes.", true);
       state.content.headline = v.headline.trim();
+      state.content.featured = featured;
       save();
+      toast("Homepage content saved for this browser.");
       renderDashboard();
     });
     on("admin-gallery-form", (f, v) => {
@@ -1992,35 +1997,31 @@
   function renderGallery() {
     const gallery = $(".gallery");
     if (!gallery) return;
-    const originals = $$("img", gallery).map((im, i) => ({
-      id: -i - 1,
-      image: im.src,
-      caption: im.alt,
-      category: [
-        "Mountains",
-        "Groups",
-        "Trails",
-        "Trails",
-        "Mountains",
-        "Guides",
-      ][i],
-    }));
-    const all = [...originals, ...state.gallery];
+    // Read the original sample images once. Reading them again after filtering
+    // would accidentally treat previously rendered buttons as new originals.
+    if (!renderGallery.originals) {
+      renderGallery.originals = $$("img", gallery).map((im, i) => ({
+        id: -i - 1,
+        image: im.src,
+        caption: im.dataset.caption || im.alt,
+        category: im.dataset.category || ["Mountains", "Groups", "Trails", "Trails", "Mountains", "Guides"][i],
+      }));
+    }
+    const all = [...renderGallery.originals, ...state.gallery];
     const category = $("#gallery-category")?.value || "";
-    gallery.innerHTML = all
-      .filter((x) => !category || x.category === category)
-      .map(
-        (g) =>
-          `<button class="kt-gallery-item" type="button" data-photo="${esc(g.id)}" aria-label="Enlarge ${esc(g.caption)}"><img src="${esc(g.image)}" alt="${esc(g.caption)}"><span>${esc(g.caption)}</span></button>`,
-      )
-      .join("");
-    $$("[data-photo]", gallery).forEach((el) =>
+    const visible = all.filter((x) => !category || x.category === category);
+    const count = $("#gallery-count");
+    if (count) count.textContent = `${visible.length} photo${visible.length === 1 ? "" : "s"} ${category ? "in " + category : "in the gallery"}`;
+    gallery.innerHTML = visible.length
+      ? visible.map((g) =>
+          `<button class="kt-gallery-item" type="button" data-photo="${esc(g.id)}" aria-label="Enlarge ${esc(g.caption)}"><img src="${esc(g.image)}" alt="${esc(g.caption)}" loading="lazy"><span>${esc(g.caption)}</span></button>`,
+        ).join("")
+      : `<p class="empty-state">No photos in this category yet. Try another filter.</p>`;
+    $$('[data-photo]', gallery).forEach((el) =>
       el.addEventListener("click", () => {
         const g = all.find((x) => x.id === Number(el.dataset.photo));
         if (g)
-          modal(
-            `<img class="kt-modal-image" src="${esc(g.image)}" alt="${esc(g.caption)}"><p>${esc(g.caption)}</p>`,
-          );
+          modal(`<img class="kt-modal-image" src="${esc(g.image)}" alt="${esc(g.caption)}"><p>${esc(g.caption)}</p>`);
       }),
     );
   }
@@ -2048,6 +2049,25 @@
     root.showModal();
     $(".kt-modal-close", root)?.focus({ preventScroll: true });
   }
+  // Company content: keep featured hike cards in sync with admin-managed
+  // demo data instead of displaying permanently hard-coded schedules.
+  function renderHomepageFeatured() {
+    const host = $("#featured-hikes");
+    if (!host) return;
+    const selected = Array.isArray(state.content?.featured)
+      ? state.content.featured.map(Number)
+      : [1, 2, 3];
+    const cards = selected.map((trailId) => {
+      const t = trail(trailId);
+      const nextHike = state.hikes
+        .filter((h) => h.trailId === trailId && h.status === "active" && h.date >= today())
+        .sort((a, b) => a.date.localeCompare(b.date))[0];
+      if (!t || !nextHike) return "";
+      return `<article class="card"><img class="card-image" src="${esc(t.image)}" alt="Scenery representing ${esc(t.name)}"><div class="card-body"><span class="tag">${esc(t.difficulty)}</span><h3>${esc(t.name)}</h3><p>${esc(t.description)}</p><div class="card-meta">${badge(t.distance + " km")}${badge(t.duration)}${badge(fullDate(nextHike.date))}${badge(slots(nextHike) + " slots available")}</div><a class="btn btn-primary" href="hike-details.html?hike=${nextHike.id}">View hike details</a></div></article>`;
+    }).filter(Boolean);
+    host.innerHTML = cards.length ? cards.join("") : `<div class="empty-state"><p>No featured hikes are currently scheduled in this browser.</p><a class="btn btn-secondary" href="trails.html">Explore all hikes</a></div>`;
+  }
+
   function contactForm() {
     const form = $("#contact-inquiry");
     if (!form) return;
@@ -2070,6 +2090,8 @@
         .forEach((u) => notice(u.id, `New contact inquiry from ${v.name}.`));
       save();
       form.reset();
+      const feedback = $("#contact-feedback");
+      if (feedback) feedback.textContent = "Demo inquiry saved in this browser. No email was sent.";
       toast("Inquiry saved in this browser. No email was sent.");
     });
   }
@@ -2136,6 +2158,7 @@
     renderDashboard();
     renderCommunity();
     renderGallery();
+    renderHomepageFeatured();
     contactForm();
     $("#difficulty-filter")?.addEventListener("change", renderTrails);
     $("#location-filter")?.addEventListener("input", renderTrails);
