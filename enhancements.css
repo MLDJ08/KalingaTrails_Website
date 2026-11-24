@@ -1,5 +1,4 @@
-/* Lorenzo modules 4–6. Scoped enhancement layer: existing site palette/layout remain authoritative.
-   Bootstrap 5 grid/utilities are used only on the selected pages. */
+
 .kt-lz-page {
   --lz-forest: #2f5d50;
   --lz-forest-deep: #214739;

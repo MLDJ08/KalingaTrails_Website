@@ -62,7 +62,7 @@
     <div class="container">
       <p class="eyebrow">Customer Support</p>
       <h1>Contact Kalinga Trails</h1>
-      <p>Learn how our guided-hike booking process works, review policies, and send a demonstration inquiry.</p>
+      <p>Learn how our guided-hike booking process works, review policies, and send a inquiry.</p>
     </div>
   </section>
 
@@ -77,7 +77,7 @@
           <div><dt>Proposed hours</dt><dd>Monday–Saturday, 8:00 AM–6:00 PM (Philippine time)</dd></div>
           <div><dt>Service area</dt><dd>Guided outdoor experiences in selected Philippine hiking locations</dd></div>
         </dl>
-        <p class="demo-disclaimer">The contact details and business hours above are illustrative. The email and telephone number are not connected to customer support.</p>
+        <p class="project-notice">The contact details and business hours above are illustrative. The email and telephone number are not connected to customer support.</p>
 
         <div class="faq" id="faq">
           <h2>Frequently Asked Questions</h2>
@@ -87,11 +87,15 @@
           </details>
           <details class="faq-entry">
             <summary>Does submitting a request guarantee a slot?</summary>
-            <p>No. The administrator must review the request and confirm the booking. Available slots and schedules are demonstration data in this browser.</p>
+            <p>No. The administrator must review the request and confirm the booking. Available slots and schedules are locally saved information in this browser.</p>
           </details>
           <details class="faq-entry">
             <summary>Can I cancel a booking?</summary>
-            <p>Yes. In this prototype, you can cancel a pending or confirmed request from My Bookings in your hiker dashboard. Real-world cancellation deadlines, refunds, and payment policies have not yet been implemented.</p>
+            <p>Yes. In this prototype, you can cancel a pending or confirmed request from My Bookings in your hiker dashboard. Bookings can be cancelled before the hike. Payments already recorded require an administrator to handle a refund outside the website.</p>
+          </details>
+          <details class="faq-entry">
+            <summary>How do payment records work?</summary>
+            <p>Choose a payment preference when requesting a hike. Once your booking is approved, you may provide a transfer reference in My Bookings if you used GCash or bank transfer. An administrator records payments only after independently checking them. The website does not process transactions or send funds.</p>
           </details>
           <details class="faq-entry">
             <summary>What should I bring?</summary>
@@ -111,25 +115,25 @@
       <div>
         <div class="form-box">
           <h2>Send an Inquiry</h2>
-          <p class="demo-disclaimer">Demo only: your inquiry is saved in this browser. It is not emailed or delivered to a business. Do not enter real personal or medical information.</p>
+          <p class="project-notice">Note: your inquiry is saved in this browser. It is not emailed or delivered to a business. Do not enter real personal or medical information.</p>
           <form id="contact-inquiry">
             <div class="form-group"><label for="name">Full Name</label><input id="name" name="name" type="text" required minlength="2" maxlength="80" autocomplete="name" placeholder="Example: Juan Dela Cruz"></div>
             <div class="form-group"><label for="email">Email Address</label><input id="email" name="email" type="email" required maxlength="120" autocomplete="email" placeholder="you@example.com"></div>
             <div class="form-group"><label for="topic">Inquiry Topic</label><select id="topic" name="topic"><option>General Inquiry</option><option>Hike Information</option><option>Booking Question</option><option>Safety and Preparation</option><option>Other</option></select></div>
             <div class="form-group"><label for="message">Message</label><textarea id="message" name="message" required minlength="10" maxlength="1000" placeholder="What would you like to ask?"></textarea></div>
-            <button class="btn btn-primary" type="submit">Save Demo Inquiry</button>
+            <button class="btn btn-primary" type="submit">Save Inquiry</button>
             <p class="form-feedback" id="contact-feedback" role="status" aria-live="polite"></p>
           </form>
         </div>
         <div class="booking-policy-panel" id="booking-policies">
           <h2>Booking &amp; Service Policies</h2>
-          <p class="demo-disclaimer">Proposed business rules for the fictional company. Only the actions described as available in the prototype are implemented.</p>
+          <p class="project-notice">Proposed business rules for the fictional company. Only the actions described as available in the prototype are implemented.</p>
           <h3>Requests &amp; confirmation</h3>
           <p>A booking request does not equal a confirmed reservation. An administrator reviews participant and scheduling information before confirmation.</p>
           <h3>Cancellations &amp; changes</h3>
-          <p>Hikers can cancel pending and confirmed demo bookings in their dashboards. For a future real service, the team would publish deadlines, refund rules, and rescheduling procedures before collecting payment.</p>
+          <p>Hikers can cancel pending and confirmed bookings in their dashboards. A cancelled booking that has a recorded payment is flagged for refund review. Refunds must be arranged outside this website.</p>
           <h3>Package inclusions &amp; payment</h3>
-          <p>Before accepting actual customers, each hike listing should specify the per-person price, inclusions, exclusions, transport, permits, and payment instructions. This prototype does not charge customers or process refunds.</p>
+          <p>Each scheduled hike shows a starting price per person. The booking page calculates an estimated total and lets hikers choose pay-on-site, GCash or bank transfer as a preference. After confirmation, hikers may submit a transfer reference for administrator review. Administrators can record that payment has been independently verified. No money is collected or refunded through this website; all prices and policies are illustrative.</p>
           <h3>Safety &amp; weather</h3>
           <p>Participants must review difficulty, gear guidance, and the meeting location. A future operating policy should allow the organizer to postpone or cancel unsafe hikes and contact affected customers.</p>
         </div>

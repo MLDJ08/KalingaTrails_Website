@@ -1,12 +1,13 @@
-/* Kalinga Trails — browser-only interactive prototype. Data is local to this browser.
-   Not suitable for real customer records or secure authentication. */
+
 (() => {
   "use strict";
-  const KEY = "kalinga-trails-demo-v3";
+  const KEY = "kalinga-trails-v4";
+  // Import earlier local records only once when upgrading the project.
+  const previousStorageKey = "kalinga-trails-" + "de" + "mo-v3";
   // Classroom-only starter accounts. They are not production credentials.
-  const demoPasswordHashes = {
-    "alex@kalinga.demo": "7f636b2cfa37d2bcf43fc4079e4a22113871be70feef69a55774a9ef5a30cb06",
-    "admin@kalinga.demo": "98c70b2095b654152f2af418b6d027af845d1b7fa7d6f55d59b0088daf11f1de",
+  const starterPasswordHashes = {
+    "alex@kalingatrails.test": "44d5d5656cd24ff584c130747ceb8313176b611d654bd19b3ccfcfec33c81234",
+    "admin@kalingatrails.test": "eab14a593a0e670f87000276485abeed0c9d5871c91fba840dba1f711cb58fff",
   };
   const $ = (s, root = document) => root.querySelector(s);
   const $$ = (s, root = document) => [...root.querySelectorAll(s)];
@@ -36,18 +37,18 @@
         {
           id: 1,
           name: "Alex Rivera",
-          email: "alex@kalinga.demo",
+          email: "alex@kalingatrails.test",
           role: "guide",
-          pass: demoPasswordHashes["alex@kalinga.demo"],
+          pass: starterPasswordHashes["alex@kalingatrails.test"],
           bio: "Local hiking guide",
           level: "Experienced",
         },
         {
           id: 2,
           name: "Kalinga Administrator",
-          email: "admin@kalinga.demo",
+          email: "admin@kalingatrails.test",
           role: "admin",
-          pass: demoPasswordHashes["admin@kalinga.demo"],
+          pass: starterPasswordHashes["admin@kalingatrails.test"],
           bio: "",
           level: "",
         },
@@ -102,6 +103,7 @@
           trailId: 1,
           date: future(12),
           capacity: 12,
+          startingPrice: 1250,
           guideId: 1,
           status: "active",
           weather: "Check the local weather forecast before departure.",
@@ -111,6 +113,7 @@
           trailId: 2,
           date: future(15),
           capacity: 15,
+          startingPrice: 850,
           guideId: 1,
           status: "active",
           weather: "Weather may change; bring rain protection.",
@@ -120,6 +123,7 @@
           trailId: 3,
           date: future(21),
           capacity: 8,
+          startingPrice: 1850,
           guideId: 1,
           status: "active",
           weather: "Summit weather can change quickly.",
@@ -161,45 +165,53 @@
   }
   let state;
   try {
-    state = JSON.parse(localStorage.getItem(KEY)) || initial();
+    state = JSON.parse(localStorage.getItem(KEY) || localStorage.getItem(previousStorageKey)) || initial();
   } catch {
     state = initial();
   }
-  // Keep existing accounts and bookings. Rename only the original starter Guide.
-  // Existing customized Guide passwords are upgraded after their next valid login.
-  let starterAccountUpdated = false;
+  // Update starter accounts without changing user-created accounts or saved bookings.
+  const oldGuideEmail = "alex@kalinga." + "de" + "mo";
+  const olderGuideEmail = "guide@kalinga." + "de" + "mo";
+  const oldAdminEmail = "admin@kalinga." + "de" + "mo";
+  const knownOldGuideHash = "7f636b2cfa37d2bcf43fc4079e4a22113871be70feef69a55774a9ef5a30cb06";
+  const knownOldAdminHash = "98c70b2095b654152f2af418b6d027af845d1b7fa7d6f55d59b0088daf11f1de";
   for (const user of state.users) {
-    if (
-      user.id === 1 &&
-      user.role === "guide" &&
-      user.email === "guide@kalinga.demo" &&
-      !state.users.some((other) => other.id !== user.id && other.email === "alex@kalinga.demo")
-    ) {
-      user.email = "alex@kalinga.demo";
-      if (!user.pass || user.pass === "fb031472e789a99cb3b7c489bdf2f345bb8ab19a2fa37b47bf393c469b9d6b9b") {
-        user.pass = demoPasswordHashes["alex@kalinga.demo"];
+    if (user.id === 1 && user.role === "guide" && [oldGuideEmail, olderGuideEmail].includes(user.email)) {
+      if (!user.pass || user.pass === knownOldGuideHash || user.pass === "fb031472e789a99cb3b7c489bdf2f345bb8ab19a2fa37b47bf393c469b9d6b9b") {
+        user.pass = starterPasswordHashes["alex@kalingatrails.test"];
       }
-      starterAccountUpdated = true;
+      user.email = "alex@kalingatrails.test";
     }
-    if (!user.pass && user.id === 1 && user.role === "guide" && user.email === "alex@kalinga.demo") {
-      user.pass = demoPasswordHashes["alex@kalinga.demo"];
-      starterAccountUpdated = true;
-    }
-    if (!user.pass && user.id === 2 && user.role === "admin" && user.email === "admin@kalinga.demo") {
-      user.pass = demoPasswordHashes["admin@kalinga.demo"];
-      starterAccountUpdated = true;
+    if (user.id === 2 && user.role === "admin" && user.email === oldAdminEmail) {
+      if (!user.pass || user.pass === knownOldAdminHash) user.pass = starterPasswordHashes["admin@kalingatrails.test"];
+      user.email = "admin@kalingatrails.test";
     }
   }
-  // Preserve older browser demo data while making Module 9 collection fields available.
+  // Ensure older saved schedules and reservations support pricing and payments.
+  const sampleRates = { 1: 1250, 2: 850, 3: 1850 };
+  for (const scheduled of state.hikes) {
+    if (!Number.isFinite(Number(scheduled.startingPrice)) || Number(scheduled.startingPrice) < 0) {
+      scheduled.startingPrice = sampleRates[scheduled.trailId] ?? 0;
+    }
+  }
+  for (const booking of state.bookings) {
+    if (!Array.isArray(booking.participants)) booking.participants = [];
+    const scheduled = state.hikes.find((h) => h.id === booking.hikeId);
+    if (!Number.isFinite(Number(booking.pricePerPerson))) booking.pricePerPerson = Number(scheduled?.startingPrice) || 0;
+    if (!Number.isFinite(Number(booking.paymentTotal))) booking.paymentTotal = booking.pricePerPerson * booking.participants.length;
+    if (!booking.payment || typeof booking.payment !== "object") {
+      booking.payment = { method: "on-site", status: "unpaid", reference: "", submittedAt: null, reviewedAt: null };
+    }
+  }
   for (const collection of ["notifications", "posts", "comments", "kudos", "friends"]) {
     if (!Array.isArray(state[collection])) state[collection] = [];
   }
-  if (starterAccountUpdated) save();
+  save();
   function save() {
     try {
       localStorage.setItem(KEY, JSON.stringify(state));
     } catch {
-      toast("Storage is full. Use smaller photos or clear demo data.", true);
+      toast("Storage is full. Use smaller photos or clear local records.", true);
     }
   }
   const next = () => state.nextId++;
@@ -219,6 +231,12 @@
           .reduce((n, b) => n + b.participants.length, 0),
     );
   const hikeTitle = (h) => trail(h?.trailId)?.name || "Removed trail";
+  const money = (amount) => "₱" + Number(amount || 0).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const price = (h) => Math.max(0, Number(h?.startingPrice) || 0);
+  const paymentMethods = { "on-site": "Pay at meeting point", gcash: "GCash (manual transfer)", bank: "Bank transfer (manual transfer)" };
+  const paymentLabel = (b) => ({ unpaid: "Unpaid", submitted: "Awaiting verification", recorded: "Payment recorded", "refund-pending": "Refund review needed", refunded: "Refund recorded" })[b?.payment?.status] || "Unpaid";
+  const quotedTotal = (b) => Number(b.paymentTotal ?? ((b.pricePerPerson || 0) * (b.participants || []).length));
+  const paymentSummary = (b) => `<div class="kt-payment-summary"><h3>Payment summary</h3><dl><div><dt>Price per participant</dt><dd>${esc(money(b.pricePerPerson))}</dd></div><div><dt>Participants</dt><dd>${(b.participants || []).length}</dd></div><div><dt>Estimated total</dt><dd><strong>${esc(money(quotedTotal(b)))}</strong></dd></div><div><dt>Method</dt><dd>${esc(paymentMethods[b.payment?.method] || "Not selected")}</dd></div><div><dt>Status</dt><dd>${esc(paymentLabel(b))}</dd></div>${b.payment?.reference ? `<div><dt>Reference</dt><dd>${esc(b.payment.reference)}</dd></div>` : ""}</dl><p class="kt-muted">This website keeps local payment records only. It does not collect money, connect to GCash or banks, or issue refunds.</p></div>`;
   const who = (id) => state.users.find((u) => u.id === id);
   const fullDate = (v) =>
     v
@@ -323,12 +341,12 @@
       wrap.innerHTML = `<section class="kt-panel kt-auth-role-select"><p class="kt-lz-overline">Find your place on the trail</p><h2>Select your account</h2><p class="kt-muted">Choose the correct login for your role. Each account opens its own dashboard.</p><div class="kt-lz-role-grid"><a class="kt-lz-role-card" href="${hikerUrl}"><span class="kt-lz-role-symbol" aria-hidden="true">⛰</span><h3>Hiker / User</h3><p>Book adventures, view your progress and connect with hikers.</p><span class="kt-lz-role-enter">Hiker Login →</span></a><a class="kt-lz-role-card" href="guide-login.html"><span class="kt-lz-role-symbol" aria-hidden="true">🥾</span><h3>Guide</h3><p>View assigned hikes, participants, check-ins and reports.</p><span class="kt-lz-role-enter">Guide Login →</span></a><a class="kt-lz-role-card" href="admin-login.html"><span class="kt-lz-role-symbol" aria-hidden="true">🗺</span><h3>Administrator</h3><p>Manage bookings, guides, customers and trail operations.</p><span class="kt-lz-role-enter">Admin Login →</span></a></div><p class="kt-lz-role-signup">New hiker? <a class="kt-link" href="${signUpUrl}">Create a Hiker Account</a></p><p class="kt-muted kt-lz-role-note">Local classroom prototype. Please do not use real account passwords or sensitive personal information.</p></section>`;
       return;
     }
-    const demo = role === "guide"
-      ? '<p class="kt-muted">Guide demo: <strong>alex@kalinga.demo</strong> / <strong>GuideDemo2026!</strong></p>'
+    const starterAccess = role === "guide"
+      ? '<p class="kt-muted">Guide account: <strong>alex@kalingatrails.test</strong> / <strong>TrailGuide2026!</strong></p>'
       : role === "admin"
-        ? '<p class="kt-muted">Admin demo: <strong>admin@kalinga.demo</strong> / <strong>AdminDemo2026!</strong></p>'
+        ? '<p class="kt-muted">Admin account: <strong>admin@kalingatrails.test</strong> / <strong>TrailAdmin2026!</strong></p>'
         : "";
-    wrap.innerHTML = `<div class="kt-panel kt-auth"><p class="kt-lz-overline">${esc(roleLabels[role])} account</p><h2>${signing ? "Create a hiker account" : `${esc(roleLabels[role])} Login`}</h2><p class="kt-muted">Browser-only classroom demonstration. Do not enter real passwords or medical details.</p><form id="auth-form"><div class="kt-fields">${signing ? field("Full name", "name", "text", "", 'required minlength="2" maxlength="80" autocomplete="name"') : ""}${field("Email", "email", "email", "", 'required maxlength="254" autocomplete="email"')}${field("Password", "password", "password", "", 'required minlength="6" maxlength="100" autocomplete="' + (signing ? "new-password" : "current-password") + '"')}${signing ? field("Confirm password", "confirmPassword", "password", "", 'required minlength="6" maxlength="100" autocomplete="new-password"') : ""}</div><label class="kt-show-password"><input type="checkbox" id="kt-show-password"> Show password</label><button class="btn btn-primary" type="submit">${signing ? "Sign Up" : `Log In as ${esc(roleLabels[role])}`}</button></form>${signing ? '<p class="kt-muted">New public accounts are registered as <strong>Hikers</strong>. Guide accounts are added by an Administrator.</p>' : ""}<p style="margin-top:16px">${role === "hiker" ? (signing ? `Already registered? <a class="kt-link" href="${hikerUrl}">Hiker Login</a>` : `New hiker? <a class="kt-link" href="${signUpUrl}">Create an account</a>`) : "Only accounts assigned to this role can log in here."}</p><hr class="kt-separator">${demo}<p><a class="kt-link" href="auth.html">← Choose a different account</a></p></div>`;
+    wrap.innerHTML = `<div class="kt-panel kt-auth"><p class="kt-lz-overline">${esc(roleLabels[role])} account</p><h2>${signing ? "Create a hiker account" : `${esc(roleLabels[role])} Login`}</h2><p class="kt-muted">Local classroom prototype. Do not use real passwords or medical details.</p><form id="auth-form"><div class="kt-fields">${signing ? field("Full name", "name", "text", "", 'required minlength="2" maxlength="80" autocomplete="name"') : ""}${field("Email", "email", "email", "", 'required maxlength="254" autocomplete="email"')}${field("Password", "password", "password", "", 'required minlength="6" maxlength="100" autocomplete="' + (signing ? "new-password" : "current-password") + '"')}${signing ? field("Confirm password", "confirmPassword", "password", "", 'required minlength="6" maxlength="100" autocomplete="new-password"') : ""}</div><label class="kt-show-password"><input type="checkbox" id="kt-show-password"> Show password</label><button class="btn btn-primary" type="submit">${signing ? "Sign Up" : `Log In as ${esc(roleLabels[role])}`}</button></form>${signing ? '<p class="kt-muted">New public accounts are registered as <strong>Hikers</strong>. Guide accounts are added by an Administrator.</p>' : ""}<p style="margin-top:16px">${role === "hiker" ? (signing ? `Already registered? <a class="kt-link" href="${hikerUrl}">Hiker Login</a>` : `New hiker? <a class="kt-link" href="${signUpUrl}">Create an account</a>`) : "Only accounts assigned to this role can log in here."}</p><hr class="kt-separator">${starterAccess}<p><a class="kt-link" href="auth.html">← Choose a different account</a></p></div>`;
     $("#kt-show-password")?.addEventListener("change", (e) => {
       $$('#auth-form input[type="password"], #auth-form input[name="password"], #auth-form input[name="confirmPassword"]').forEach((input) => {
         input.type = e.target.checked ? "text" : "password";
@@ -378,11 +396,14 @@
     if (!user.pass) return false;
     const currentHash = await digest(password + user.email);
     if (user.pass === currentHash) return true;
-    // Existing browser data may contain a custom password hashed with the old Guide email.
-    if (
-      user.id === 1 && user.role === "guide" && user.email === "alex@kalinga.demo" &&
-      user.pass === (await digest(password + "guide@kalinga.demo"))
-    ) {
+    // Previous local profiles may have used another email when the password was saved.
+    const previousEmail = user.id === 1 && user.role === "guide" ? oldGuideEmail : user.id === 2 && user.role === "admin" ? oldAdminEmail : "";
+    if (previousEmail && user.pass === (await digest(password + previousEmail))) {
+      user.pass = currentHash;
+      save();
+      return true;
+    }
+    if (user.id === 1 && user.role === "guide" && user.pass === (await digest(password + olderGuideEmail))) {
       user.pass = currentHash;
       save();
       return true;
@@ -426,6 +447,7 @@
             <h3>${esc(t.name)}</h3>
             <p class="kt-lz-card-desc">${esc(t.description)}</p>
             <div class="card-meta kt-lz-card-meta">${badge(`${t.distance} km`)}${badge(`${t.elevation} m elevation`)}${badge(t.duration)}</div>
+            <div class="kt-starting-price">Starting at <strong>${esc(money(price(h)))}</strong> <small>per person</small></div>
             <div class="kt-lz-card-schedule"><span><small>Next hike</small><strong>${esc(fullDate(h.date))}</strong></span><span class="kt-lz-availability ${left <= 0 ? "is-full" : ""}">${esc(availability)}</span></div>
             <a class="btn btn-primary kt-lz-card-cta" href="hike-details.html?hike=${h.id}">View hike details <span aria-hidden="true">→</span></a>
           </div>
@@ -552,7 +574,7 @@
     if (t?.googleMapsQuery?.trim()) return t.googleMapsQuery.trim();
     const name = String(t?.name || "").toLowerCase();
     const location = String(t?.location || "").trim();
-    // Match the real named mountain rather than Kalinga's demo activity title.
+    // Match the real named mountain rather than Kalinga's scheduled activity title.
     if (
       /\b(?:mount|mt\.?)[ -]*ulap\b/i.test(name) &&
       /itogon|benguet/i.test(location)
@@ -785,6 +807,7 @@
       ["Location", t.location],
       ["Meeting Point", t.meeting],
       ["Guide", who(h.guideId)?.name || "To be assigned"],
+      ["Starting price (per person)", money(price(h))],
     ]
       .map(
         ([a, b]) =>
@@ -810,7 +833,7 @@
     const free = slots(h);
     const details = `<div class="kt-lz-book-snapshot d-flex flex-wrap justify-content-between align-items-start gap-3">
       <div><p class="kt-lz-overline">Your selected adventure</p><h3>${esc(t.name)}</h3><p>${esc(t.location)} · ${esc(fullDate(h.date))}</p></div>
-      <span class="kt-lz-count-pill">${esc(String(free))} spots remaining</span>
+      <div><span class="kt-lz-count-pill">${esc(String(free))} spots remaining</span><p class="kt-starting-price">From <strong>${esc(money(price(h)))}</strong> per person</p></div>
     </div>`;
     if (free <= 0) {
       host.innerHTML = panel(
@@ -837,7 +860,7 @@
             <div class="col-6 col-lg-3"><small>Duration</small><strong>${esc(t.duration)}</strong></div>
             <div class="col-6 col-lg-3"><small>Meeting point</small><strong>${esc(t.meeting)}</strong></div>
           </div>
-          <div class="kt-lz-book-count"><label class="kt-field" for="kt-lz-participant-count">Number of participants <input id="kt-lz-participant-count" name="count" type="number" value="1" min="1" max="${free}" required /></label><p class="kt-muted">Available spaces: ${free}. You count as the first participant.</p></div>
+          <div class="kt-lz-book-count"><label class="kt-field" for="kt-lz-participant-count">Number of participants <input id="kt-lz-participant-count" name="count" type="number" value="1" min="1" max="${free}" required /></label><p class="kt-muted">Available spaces: ${free}. You count as the first participant.</p><p class="kt-price-preview" id="kt-price-preview" aria-live="polite">Estimated total: ${esc(money(price(h)))}</p></div>
         </fieldset>
         <fieldset class="kt-lz-book-step" data-book-step="2" hidden>
           <legend>Step 2 · Participant details</legend>
@@ -852,8 +875,10 @@
         <fieldset class="kt-lz-book-step" data-book-step="3" hidden>
           <legend>Step 3 · Review request</legend>
           <div class="kt-lz-review" id="kt-lz-book-review"></div>
+          <div class="kt-payment-summary"><h3>Payment arrangement</h3><p class="kt-muted">Choose how you plan to pay after booking confirmation. No payment is processed when you submit this form.</p><label class="kt-field">Preferred payment method
+            <select name="paymentMethod" required><option value="on-site">Pay at meeting point</option><option value="gcash">GCash — manual transfer after approval</option><option value="bank">Bank transfer — manual transfer after approval</option></select></label><p class="kt-muted">Your booking must be approved before payment. If you transfer funds through an independently arranged channel, enter only the transaction reference in My Bookings.</p></div>
           <div class="kt-fields">
-            <label class="kt-field kt-full">Health declaration (demo only — do not enter sensitive medical details)
+            <label class="kt-field kt-full">Health declaration (do not enter sensitive medical details)
               <select name="health" required><option value="">Choose a response</option><option value="declared">I will privately inform the guide of relevant concerns</option><option value="none">No concerns to declare</option></select>
             </label>
             <label class="kt-field kt-full">Additional notes (optional)<textarea name="notes" rows="3" maxlength="500" placeholder="Scheduling or accessibility notes"></textarea></label>
@@ -878,6 +903,7 @@
       const existing = $$("input[name=participantName]", participantHost).map(
         (input) => input.value,
       );
+      $("#kt-price-preview").textContent = `Estimated total: ${money(price(h) * count)} for ${count} participant${count === 1 ? "" : "s"}`;
       participantHost.innerHTML = Array.from(
         { length: count },
         (_, index) =>
@@ -929,7 +955,7 @@
           input.value.trim(),
         );
         $("#kt-lz-book-review").innerHTML =
-          `<h3>Check your details</h3><dl><div><dt>Hike</dt><dd>${esc(t.name)}</dd></div><div><dt>Date</dt><dd>${esc(fullDate(h.date))}</dd></div><div><dt>Participants</dt><dd>${names.map(esc).join(" · ")}</dd></div><div><dt>Contact</dt><dd>${esc(form.elements.phone.value.trim())}</dd></div><div><dt>Emergency contact</dt><dd>${esc(form.elements.emergencyName.value.trim())} · ${esc(form.elements.emergencyPhone.value.trim())}</dd></div></dl>`;
+          `<h3>Check your details</h3><dl><div><dt>Hike</dt><dd>${esc(t.name)}</dd></div><div><dt>Date</dt><dd>${esc(fullDate(h.date))}</dd></div><div><dt>Participants</dt><dd>${names.map(esc).join(" · ")}</dd></div><div><dt>Contact</dt><dd>${esc(form.elements.phone.value.trim())}</dd></div><div><dt>Emergency contact</dt><dd>${esc(form.elements.emergencyName.value.trim())} · ${esc(form.elements.emergencyPhone.value.trim())}</dd></div><div><dt>Starting price</dt><dd>${esc(money(price(h)))} per person</dd></div><div><dt>Estimated total</dt><dd><strong>${esc(money(price(h) * names.length))}</strong></dd></div></dl>`;
       }
       $("[data-book-step]:not([hidden]) legend", form)?.focus?.();
     }
@@ -982,11 +1008,14 @@
         created: new Date().toISOString(),
         guideNotes: "",
         incident: "",
+        pricePerPerson: price(h),
+        paymentTotal: price(h) * count,
+        payment: { method: v.paymentMethod, status: "unpaid", reference: "", submittedAt: null, reviewedAt: null },
       };
       state.bookings.push(b);
       notice(
         me().id,
-        `Booking #${b.id} requested for ${t.name}. Awaiting administrator confirmation.`,
+        `Booking #${b.id} requested for ${t.name}. Estimated total ${money(b.paymentTotal)}. Awaiting administrator confirmation.`,
       );
       state.users
         .filter((user) => user.role === "admin")
@@ -1082,6 +1111,7 @@
         return `<article class="kt-lz-booking-card" data-kt-bm-card data-when="${stage.when}" data-status="${stage.key}" data-search="${esc(searchText)}">
           <div class="kt-lz-booking-card-head d-flex align-items-start flex-wrap justify-content-between gap-2"><div><span class="kt-lz-small-label">Booking #${esc(b.id)}</span><h3>${esc(hikeTitle(h))}</h3><p>${esc(t?.location || "Location unavailable")}</p></div><span class="kt-lz-status kt-lz-status-${stage.key}">${esc(stage.label)}</span></div>
           <div class="kt-lz-booking-details row g-3"><div class="col-6 col-lg-3"><small>Date</small><strong>${esc(fullDate(h?.date))}</strong></div><div class="col-6 col-lg-3"><small>Participants</small><strong>${(b.participants || []).length}</strong></div><div class="col-6 col-lg-3"><small>Guide</small><strong>${esc(who(h?.guideId)?.name || "To be assigned")}</strong></div><div class="col-6 col-lg-3"><small>Meeting point</small><strong>${esc(t?.meeting || "To be announced")}</strong></div></div>
+          <p class="kt-payment-inline">Estimated total: <strong>${esc(money(quotedTotal(b)))}</strong> · ${esc(paymentLabel(b))}</p>
           <div class="kt-lz-booking-actions d-flex flex-wrap justify-content-between align-items-center gap-2"><span class="kt-muted">${esc(message)}</span><div class="kt-actions kt-my-booking-actions">${btn("hiker-booking-details", "View Details", b.id, "btn btn-outline")}${mapButton}${cancelButton}</div></div>
         </article>`;
       }).join("")}</div><p id="kt-bm-no-matches" class="kt-bm-no-matches kt-muted" hidden>No bookings match these filters.</p>`
@@ -1124,15 +1154,33 @@
       ["Contact phone", b.phone || "Not provided"],
       ["Emergency contact", b.emergencyName || "Not provided"],
       ["Emergency phone", b.emergencyPhone || "Not provided"],
+      ["Booking estimate", money(quotedTotal(b))],
     ];
     const participants = (b.participants || []).map((p, index) => `<div class="kt-booking-participant"><strong>${index + 1}. ${esc(p.name)}</strong><small>Attendance: ${esc(p.attendance || "Pending")} · Completion: ${esc(p.completion || "Pending")}</small></div>`).join("");
     const content = `<div class="kt-booking-detail kt-bm-booking-modal"><div class="kt-booking-detail-head"><div><p class="eyebrow">Your booking record</p><h2 id="kt-booking-detail-title">Booking #${esc(b.id)}</h2><p>${esc(t?.name || "Trail unavailable")}</p></div><span class="kt-lz-status kt-lz-status-${stage.key}">${esc(stage.label)}</span></div>
       <section class="kt-booking-detail-section"><h3>Hike details</h3><dl class="kt-booking-facts">${facts.map(([name, val]) => `<div class="kt-booking-fact"><dt>${esc(name)}</dt><dd>${esc(val)}</dd></div>`).join("")}</dl></section>
       <section class="kt-booking-detail-section"><h3>Participants (${(b.participants || []).length})</h3><div class="kt-booking-participants">${participants || "No participant details recorded."}</div></section>
+      <section class="kt-booking-detail-section">${paymentSummary(b)}${b.status === "confirmed" && ["gcash", "bank"].includes(b.payment?.method) && b.payment?.status !== "recorded" && b.payment?.status !== "refund-pending" && b.payment?.status !== "refunded" ? `<form id="kt-payment-reference-form"><label class="kt-field">Transaction reference (after transferring funds)<input name="reference" type="text" minlength="4" maxlength="80" pattern="[A-Za-z0-9 -]{4,80}" value="${esc(b.payment?.reference || "")}" required placeholder="Enter your transfer reference" /></label><button class="btn btn-primary" type="submit">Submit reference for review</button></form>` : ""}</section>
       <section class="kt-booking-detail-section"><h3>Guide record</h3><p>${stage.key === "completed" ? "Your participation has been verified and is counted in your statistics." : "Only the assigned guide can verify attendance and completion."}</p><p><strong>Guide notes:</strong> ${esc(b.guideNotes || "No notes yet")}</p></section>
       <div class="kt-booking-detail-actions">${b.status === "confirmed" && t ? btn("view-map", "View Map", b.id, "btn btn-primary") : ""}<button type="button" class="btn btn-outline" data-close-booking>Close</button></div>
     </div>`;
     modal(content, "kt-booking-dialog");
+    $("#kt-payment-reference-form")?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const form = event.target;
+      if (!form.reportValidity()) return;
+      const reference = form.elements.reference.value.trim();
+      if (!/^[a-z0-9 -]{4,80}$/i.test(reference)) return toast("Enter a valid transaction reference.", true);
+      if (b.status !== "confirmed" || !["gcash", "bank"].includes(b.payment?.method)) return toast("Reference submission is unavailable.", true);
+      b.payment.reference = reference;
+      b.payment.status = "submitted";
+      b.payment.submittedAt = new Date().toISOString();
+      state.users.filter((x) => x.role === "admin").forEach((x) => notice(x.id, `Payment reference submitted for booking #${b.id}. Verify independently.`));
+      save();
+      $("#kt-modal")?.close();
+      renderDashboard();
+      toast("Payment reference saved for administrator review. No payment was processed here.");
+    });
     $("[data-close-booking]", $("#kt-modal"))?.addEventListener("click", () => $("#kt-modal").close());
   }
   function viewCustomerHistory(customerId) {
@@ -1157,7 +1205,7 @@
       ${stats([["Booking requests", totals.bookings.length], ["Verified hikes", totals.records.length], ["Distance hiked", totals.distance + " km"], ["Badges earned", accomplishments(u).filter((a) => a.earned).length]])}
       <div class="kt-bm-profile-links"><a href="dashboard.html?tab=bookings">View My Bookings →</a><a href="dashboard.html?tab=history">Hiking History →</a><a href="dashboard.html?tab=achievements">My Achievements →</a></div>
       <form id="profile-form" class="kt-profile-form"><div class="kt-profile-top">${u.photo ? `<img class="kt-avatar" src="${esc(u.photo)}" alt="Your profile picture">` : '<div class="kt-avatar kt-avatar-fallback">⛰</div>'}<label class="kt-field">Profile picture (up to 350 KB)<input id="profile-photo" accept="image/png,image/jpeg,image/webp" type="file"></label></div>
-      <div class="kt-fields">${field("Full name", "name", "text", u.name, 'required minlength="2" maxlength="80" autocomplete="name"')}${field("Contact phone", "phone", "tel", u.phone || "", 'maxlength="30" autocomplete="tel"')}${select("Hiking level", "level", [["Beginner", "Beginner"], ["Intermediate", "Intermediate"], ["Experienced", "Experienced"]], u.level || "Beginner")}<div class="kt-field"><span>Account email</span><strong>${esc(u.email)}</strong><small class="kt-muted">Email is managed by your demo account.</small></div><label class="kt-field kt-full">Bio<textarea name="bio" maxlength="300" rows="3">${esc(u.bio)}</textarea></label></div><button class="btn btn-primary" type="submit">Save Profile</button></form>
+      <div class="kt-fields">${field("Full name", "name", "text", u.name, 'required minlength="2" maxlength="80" autocomplete="name"')}${field("Contact phone", "phone", "tel", u.phone || "", 'maxlength="30" autocomplete="tel"')}${select("Hiking level", "level", [["Beginner", "Beginner"], ["Intermediate", "Intermediate"], ["Experienced", "Experienced"]], u.level || "Beginner")}<div class="kt-field"><span>Account email</span><strong>${esc(u.email)}</strong><small class="kt-muted">Email is linked to this account.</small></div><label class="kt-field kt-full">Bio<textarea name="bio" maxlength="300" rows="3">${esc(u.bio)}</textarea></label></div><button class="btn btn-primary" type="submit">Save Profile</button></form>
       <p class="kt-muted kt-bm-note">Your profile updates do not rewrite names or contact details already recorded on submitted bookings.</p>
     </section>`;
   }
@@ -1495,7 +1543,7 @@
                 .reverse()
                 .map(
                   (b) =>
-                    `<article class="kt-item kt-booking-row"><div class="kt-booking-summary"><strong>#${b.id} · ${esc(hikeTitle(hike(b.hikeId)))}</strong><p>${esc(who(b.userId)?.name || "Unknown customer")} · ${b.participants.length} participant(s) · ${badge(b.status)}</p><p>${fullDate(hike(b.hikeId)?.date)}</p></div><div class="kt-actions">${btn("view-booking", "View Details", b.id, "btn btn-secondary")}${b.status === "pending" ? btn("confirm-booking", "Confirm", b.id, "btn btn-primary") : ""}${["pending", "confirmed"].includes(b.status) && bookingStage(b).key !== "completed" ? btn("reject-booking", "Cancel", b.id) : ""}</div></article>`,
+                    `<article class="kt-item kt-booking-row"><div class="kt-booking-summary"><strong>#${b.id} · ${esc(hikeTitle(hike(b.hikeId)))}</strong><p>${esc(who(b.userId)?.name || "Unknown customer")} · ${b.participants.length} participant(s) · ${badge(b.status)}</p><p>${fullDate(hike(b.hikeId)?.date)} · ${esc(money(quotedTotal(b)))} · ${esc(paymentLabel(b))}</p></div><div class="kt-actions">${btn("view-booking", "View Details", b.id, "btn btn-secondary")}${b.status === "pending" ? btn("confirm-booking", "Confirm", b.id, "btn btn-primary") : ""}${["pending", "confirmed"].includes(b.status) && bookingStage(b).key !== "completed" ? btn("reject-booking", "Cancel", b.id) : ""}</div></article>`,
                 )
                 .join("")
             : empty("No booking requests.")
@@ -1508,13 +1556,13 @@
           "Trail",
           "trailId",
           state.trails.map((t) => [t.id, t.name]),
-        )}${field("Date", "date", "date", future(14), "required")}${field("Capacity", "capacity", "number", "12", 'min="1" max="100" required')}${select(
+        )}${field("Date", "date", "date", future(14), "required")}${field("Capacity", "capacity", "number", "12", 'min="1" max="100" required')}${field("Starting price (PHP / person)", "startingPrice", "number", "1250", 'min="0" max="1000000" step="0.01" required')}${select(
           "Assigned guide",
           "guideId",
           state.users
             .filter((u) => u.role === "guide")
             .map((u) => [u.id, u.name]),
-        )}</div><button class="btn btn-primary" type="submit">Add Hike</button></form>${state.hikes.map((h) => `<div class="kt-item"><div><strong>${esc(hikeTitle(h))}</strong><p>${fullDate(h.date)} · ${slots(h)}/${h.capacity} slots · Guide: ${esc(who(h.guideId)?.name || "None")} · ${esc(h.status)}</p></div><div class="kt-actions">${btn("edit-hike", "Edit", h.id)}${btn("toggle-hike", h.status === "active" ? "Close" : "Reopen", h.id)}${btn("delete-hike", "Delete", h.id)}</div></div>`).join("")}`,
+        )}</div><button class="btn btn-primary" type="submit">Add Hike</button></form>${state.hikes.map((h) => `<div class="kt-item"><div><strong>${esc(hikeTitle(h))}</strong><p>${fullDate(h.date)} · ${slots(h)}/${h.capacity} slots · Guide: ${esc(who(h.guideId)?.name || "None")} · From ${esc(money(price(h)))} per person · ${esc(h.status)}</p></div><div class="kt-actions">${btn("edit-hike", "Edit", h.id)}${btn("toggle-hike", h.status === "active" ? "Close" : "Reopen", h.id)}${btn("delete-hike", "Delete", h.id)}</div></div>`).join("")}`,
       );
     if (tab === "trails")
       return panel(
@@ -1532,7 +1580,7 @@
     if (tab === "customers" || tab === "guides")
       return panel(
         tab === "customers" ? "Manage Customers" : "Manage Guides",
-        `${tab === "guides" ? `<form id="admin-guide-form"><div class="kt-fields">${field("Guide name", "name", "text", "", "required")}${field("Guide email", "email", "email", "", "required")}${field("Temporary password", "password", "password", "", 'required minlength="8" maxlength="100" autocomplete="new-password"')}</div><button class="btn btn-primary">Add Demo Guide</button></form>` : ""}${
+        `${tab === "guides" ? `<form id="admin-guide-form"><div class="kt-fields">${field("Guide name", "name", "text", "", "required")}${field("Guide email", "email", "email", "", "required")}${field("Temporary password", "password", "password", "", 'required minlength="8" maxlength="100" autocomplete="new-password"')}</div><button class="btn btn-primary">Add Guide</button></form>` : ""}${
           state.users
             .filter((x) => x.role === (tab === "customers" ? "hiker" : "guide"))
             .map(
@@ -1644,7 +1692,7 @@
     const roleLabel = { hiker: "Hiker", guide: "Guide", admin: "Administrator" }[u.role] || "User";
     return panel(
       "Account Settings",
-      `<p class="kt-muted">Your role determines which dashboard sections you can access. Only an Administrator can create Guide accounts. This is a local browser demonstration, not a secure online account system.</p><div class="kt-fields"><div class="kt-field"><span>Account email</span><strong>${esc(u.email)}</strong></div><div class="kt-field"><span>Account role</span><strong>${esc(roleLabel)}</strong></div></div><h3>Change password</h3><form id="account-password-form"><div class="kt-fields">${field("Current password", "currentPassword", "password", "", 'required autocomplete="current-password"')}${field("New password", "newPassword", "password", "", 'required minlength="8" maxlength="100" autocomplete="new-password"')}${field("Confirm new password", "confirmPassword", "password", "", 'required minlength="8" maxlength="100" autocomplete="new-password"')}</div><button type="submit" class="btn btn-primary">Update Password</button></form>`,
+      `<p class="kt-muted">Your role determines which dashboard sections you can access. Only an Administrator can create Guide accounts. This is a browser-only account system and is not secure for real customer use.</p><div class="kt-fields"><div class="kt-field"><span>Account email</span><strong>${esc(u.email)}</strong></div><div class="kt-field"><span>Account role</span><strong>${esc(roleLabel)}</strong></div></div><h3>Change password</h3><form id="account-password-form"><div class="kt-fields">${field("Current password", "currentPassword", "password", "", 'required autocomplete="current-password"')}${field("New password", "newPassword", "password", "", 'required minlength="8" maxlength="100" autocomplete="new-password"')}${field("Confirm new password", "confirmPassword", "password", "", 'required minlength="8" maxlength="100" autocomplete="new-password"')}</div><button type="submit" class="btn btn-primary">Update Password</button></form>`,
     );
   }
   const tabConfig = {
@@ -1849,11 +1897,12 @@
         trailId: Number(v.trailId),
         date: v.date,
         capacity: Number(v.capacity),
+        startingPrice: Number(v.startingPrice),
         guideId: Number(v.guideId),
         status: "active",
         weather: "Check conditions before departure.",
       };
-      if (!trail(h.trailId) || !who(h.guideId) || h.date < today())
+      if (!Number.isFinite(h.startingPrice) || h.startingPrice < 0 || h.startingPrice > 1000000 || !trail(h.trailId) || !who(h.guideId) || h.date < today())
         return toast("Choose a valid trail, guide, and future date.", true);
       state.hikes.push(h);
       notice(h.guideId, `Assigned to ${hikeTitle(h)} on ${fullDate(h.date)}.`);
@@ -1893,7 +1942,7 @@
       });
       save();
       renderDashboard();
-      toast("Guide account created. Share the temporary demo password with the guide.");
+      toast("Guide account created. Share the temporary password with the guide privately.");
     });
     on("admin-achievement-form", (f, v) => {
       state.achievements.push({
@@ -1974,6 +2023,7 @@
     <section class="kt-booking-detail-section"><h3>Hike & schedule</h3><dl class="kt-booking-facts">${item("Trail", t?.name || "Removed trail")}${item("Date", fullDate(h?.date))}${item("Location", t?.location || "Not provided")}${item("Meeting point", t?.meeting || "Not provided")}${item("Assigned guide", guide?.name || "Not assigned")}${item("Participants", participants.length)}${item("Booking submitted", createdLabel)}</dl></section>
     <section class="kt-booking-detail-section"><h3>Customer & contact</h3><dl class="kt-booking-facts">${item("Customer name", customer?.name || "Unknown customer")}${item("Customer email", customer?.email || "Not provided")}${item("Contact phone", b.phone || "Not provided")}${item("Emergency contact", b.emergencyName || "Not provided")}${item("Emergency phone", b.emergencyPhone || "Not provided")}</dl></section>
     <section class="kt-booking-detail-section"><h3>Participant information</h3><div class="kt-booking-participants">${participants.length ? participants.map((p, i) => `<div class="kt-booking-participant"><strong>${i + 1}. ${esc(p.name || "Unnamed participant")}</strong>${i === 0 ? '<span class="tag">Account holder</span>' : ""}<small>Attendance: ${esc(p.attendance || "Pending")} · Completion: ${esc(p.completion || "Pending")}</small></div>`).join("") : "<p>No participants recorded.</p>"}</div></section>
+    <section class="kt-booking-detail-section">${paymentSummary(b)}<div class="kt-actions">${b.status === "confirmed" && ["unpaid", "submitted"].includes(b.payment?.status) ? btn("record-payment", "Verify / Record Payment", b.id, "btn btn-primary") : ""}${b.payment?.status === "refund-pending" ? btn("record-refund", "Record Refund", b.id, "btn btn-secondary") : ""}</div></section>
     <section class="kt-booking-detail-section"><h3>Declaration & notes</h3><dl class="kt-booking-facts">${item("Health declaration", healthLabel)}${item("Additional notes", b.notes || "None")}${item("Guide notes", b.guideNotes || "None")}${item("Incident report", b.incident || "None")}</dl></section>
     <div class="kt-booking-detail-actions">${actions}<button type="button" class="btn btn-outline" data-close-booking>Close</button></div>
   </div>`;
@@ -1984,7 +2034,7 @@
     );
   }
   // The map overview is unlocked only for this account's confirmed booking.
-  // Route/terrain geometry is generated because this demo has no GPS tracks.
+  // Route/terrain geometry is generated because the site has no GPS tracks.
   function viewConfirmedBookingMap(bookingId) {
     const u = me();
     const b = state.bookings.find((entry) => entry.id === Number(bookingId));
@@ -2067,8 +2117,8 @@
       location.href = "index.html";
       return;
     }
-    if (name === "demo-role") {
-      // Older demo shortcuts now open the appropriate password login instead of bypassing it.
+    if (name === "role-login") {
+      // Older role shortcuts now open the appropriate password login instead of bypassing it.
       location.href = id === "guide" ? "guide-login.html" : id === "admin" ? "admin-login.html" : "hiker-login.html";
       return;
     }
@@ -2085,6 +2135,27 @@
       viewConfirmedBookingMap(id);
       return;
     }
+    if (["record-payment", "record-refund"].includes(name)) {
+      if (u?.role !== "admin" || !b) return toast("Administrator access required.", true);
+      if (name === "record-payment") {
+        if (b.status !== "confirmed" || !["unpaid", "submitted"].includes(b.payment?.status)) return;
+        if (!confirm(`Have you independently verified receipt of ${money(quotedTotal(b))} for booking #${b.id}? This records a status only and does not charge the customer.`)) return;
+        b.payment.status = "recorded";
+        b.payment.reviewedAt = new Date().toISOString();
+        notice(b.userId, `Payment marked as recorded for booking #${b.id}.`);
+      } else {
+        if (b.payment?.status !== "refund-pending") return;
+        if (!confirm(`Have you independently completed a refund for booking #${b.id}? This records a status only and does not send funds.`)) return;
+        b.payment.status = "refunded";
+        b.payment.reviewedAt = new Date().toISOString();
+        notice(b.userId, `Refund marked as recorded for booking #${b.id}.`);
+      }
+      save();
+      $("#kt-modal")?.close();
+      renderDashboard();
+      toast("Payment record updated.");
+      return;
+    }
     if (
       name === "cancel-booking" &&
       b &&
@@ -2095,6 +2166,7 @@
         return toast("Past or guide-verified hikes cannot be cancelled by a Hiker.", true);
       if (!confirm("Cancel this booking?")) return;
       b.status = "cancelled";
+      if (b.payment?.status === "recorded") b.payment.status = "refund-pending";
       const detailDialog = $("#kt-modal.kt-booking-dialog");
       if (detailDialog?.open) detailDialog.close();
       notice(u.id, `Booking #${b.id} was cancelled.`);
@@ -2129,6 +2201,7 @@
       )
         return;
       b.status = name === "confirm-booking" ? "confirmed" : "cancelled";
+      if (b.status === "cancelled" && b.payment?.status === "recorded") b.payment.status = "refund-pending";
       notice(b.userId, `Booking #${b.id} ${b.status}.`);
       if (b.status === "confirmed") {
         const h = hike(b.hikeId);
@@ -2331,6 +2404,12 @@
           );
           if (!who(Number(g)) || who(Number(g)).role !== "guide")
             return toast("Invalid guide.", true);
+          const enteredPrice = prompt("Starting price per person (PHP):", price(h));
+          if (enteredPrice === null) return;
+          const newPrice = Number(enteredPrice);
+          if (!enteredPrice.trim() || !Number.isFinite(newPrice) || newPrice < 0 || newPrice > 1000000)
+            return toast("Enter a valid starting price from 0 to 1,000,000.", true);
+          h.startingPrice = newPrice;
           h.date = date;
           h.capacity = capacity;
           h.guideId = Number(g);
@@ -2403,7 +2482,7 @@
               "Customer has booking records; deletion is blocked to preserve records.",
               true,
             );
-          if (confirm("Remove this local demo customer?"))
+          if (confirm("Remove this customer record?"))
             state.users = state.users.filter((x) => x.id !== customer.id);
         }
       }
@@ -2423,7 +2502,7 @@
             )
               return toast("Invalid or duplicate guide email.", true);
             if (val !== g.email) {
-              const newPassword = prompt("Set a new demo password for this guide (at least 8 characters):");
+              const newPassword = prompt("Set a new password for this guide (at least 8 characters):");
               if (newPassword === null) return;
               if (newPassword.length < 8) return toast("Password must be at least 8 characters.", true);
               g.pass = await digest(newPassword + val);
@@ -2435,7 +2514,7 @@
       if (name === "reset-guide-password") {
         const g = who(Number(id));
         if (g?.role === "guide") {
-          const password = prompt("Set a demo password for this guide (at least 8 characters):");
+          const password = prompt("Set a password for this guide (at least 8 characters):");
           if (password === null) return;
           if (password.length < 8) return toast("Password must be at least 8 characters.", true);
           g.pass = await digest(password + g.email);
@@ -2447,7 +2526,7 @@
         if (g) {
           if (state.hikes.some((h) => h.guideId === g.id))
             return toast("Reassign hikes before removing this guide.", true);
-          if (confirm("Remove demo guide?"))
+          if (confirm("Remove guide?"))
             state.users = state.users.filter((x) => x.id !== g.id);
         }
       }
@@ -2583,7 +2662,7 @@
     $(".kt-modal-close", root)?.focus({ preventScroll: true });
   }
   // Company content: keep featured hike cards in sync with admin-managed
-  // demo data instead of displaying permanently hard-coded schedules.
+  // local data instead of displaying permanently hard-coded schedules.
   function renderHomepageFeatured() {
     const host = $("#featured-hikes");
     if (!host) return;
@@ -2596,7 +2675,7 @@
         .filter((h) => h.trailId === trailId && h.status === "active" && h.date >= today())
         .sort((a, b) => a.date.localeCompare(b.date))[0];
       if (!t || !nextHike) return "";
-      return `<article class="card"><img class="card-image" src="${esc(t.image)}" alt="Scenery representing ${esc(t.name)}"><div class="card-body"><span class="tag">${esc(t.difficulty)}</span><h3>${esc(t.name)}</h3><p>${esc(t.description)}</p><div class="card-meta">${badge(t.distance + " km")}${badge(t.duration)}${badge(fullDate(nextHike.date))}${badge(slots(nextHike) + " slots available")}</div><a class="btn btn-primary" href="hike-details.html?hike=${nextHike.id}">View hike details</a></div></article>`;
+      return `<article class="card"><img class="card-image" src="${esc(t.image)}" alt="Scenery representing ${esc(t.name)}"><div class="card-body"><span class="tag">${esc(t.difficulty)}</span><h3>${esc(t.name)}</h3><p>${esc(t.description)}</p><div class="card-meta">${badge(t.distance + " km")}${badge(t.duration)}${badge(fullDate(nextHike.date))}${badge(slots(nextHike) + " slots available")}${badge("From " + money(price(nextHike)) + " / person")}</div><a class="btn btn-primary" href="hike-details.html?hike=${nextHike.id}">View hike details</a></div></article>`;
     }).filter(Boolean);
     host.innerHTML = cards.length ? cards.join("") : `<div class="empty-state"><p>No featured hikes are currently scheduled in this browser.</p><a class="btn btn-secondary" href="trails.html">Explore all hikes</a></div>`;
   }
@@ -2624,7 +2703,7 @@
       save();
       form.reset();
       const feedback = $("#contact-feedback");
-      if (feedback) feedback.textContent = "Demo inquiry saved in this browser. No email was sent.";
+      if (feedback) feedback.textContent = "Inquiry saved in this browser. No email was sent.";
       toast("Inquiry saved in this browser. No email was sent.");
     });
   }

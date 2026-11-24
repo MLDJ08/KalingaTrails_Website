@@ -708,7 +708,6 @@ textarea {
     outline-offset: 2px;
   }
 
-  /* Three lines */
   .nav-toggle-label span,
   .nav-toggle-label span::before,
   .nav-toggle-label span::after {
@@ -741,7 +740,6 @@ textarea {
     top: 8px;
   }
 
-  /* Turns into an X when open */
   .nav-toggle:checked + .nav-toggle-label span {
     background: transparent;
   }
@@ -754,7 +752,6 @@ textarea {
     transform: translateY(-8px) rotate(-45deg);
   }
 
-  /* Menu panel: hidden until the checkbox is ticked */
   .nav-links,
   .nav-actions {
     display: none;
@@ -862,7 +859,6 @@ textarea {
   }
 }
 
-/* Proportional refinements; original theme, fonts and layout retained. */
 html {
   scroll-padding-top: 85px;
 }
@@ -2961,7 +2957,7 @@ main,
   line-height: 1.5;
 }
 
-.demo-note {
+.local-notice {
   font-size: 0.88rem;
   opacity: 0.9;
   max-width: 680px;
@@ -3002,7 +2998,7 @@ main,
     sans-serif;
 }
 
-.demo-disclaimer {
+.project-notice {
   background: #eff3f0;
   color: #2d5147;
   font-size: 0.92rem;
@@ -3138,7 +3134,6 @@ main,
   text-align: center;
 }
 
-
 /* =====================================================
    MODULE 11 — GUIDE OPERATIONS ANIMATIONS
    KALINGA TRAILS
@@ -3228,15 +3223,13 @@ body.kt-dashboard-page #dashboard-app .kt-sidebar nav a {
     box-shadow 0.2s ease;
 }
 
-body.kt-dashboard-page #dashboard-app
-.kt-sidebar nav a:hover {
+body.kt-dashboard-page #dashboard-app .kt-sidebar nav a:hover {
   transform: translateX(4px);
   background: #edf4ef;
   color: #2f5d50;
 }
 
-body.kt-dashboard-page #dashboard-app
-.kt-sidebar nav a.selected {
+body.kt-dashboard-page #dashboard-app .kt-sidebar nav a.selected {
   background: #e4eee7;
   box-shadow: inset 4px 0 0 #2f5d50;
 }
@@ -3257,16 +3250,14 @@ body.kt-dashboard-page #dashboard-app .kt-item:hover {
 
 /* 6. GUIDE BOOKING CARDS */
 
-body.kt-dashboard-page #dashboard-app
-.kt-guide-booking-card {
+body.kt-dashboard-page #dashboard-app .kt-guide-booking-card {
   transition:
     transform 0.25s ease,
     box-shadow 0.25s ease,
     border-color 0.25s ease;
 }
 
-body.kt-dashboard-page #dashboard-app
-.kt-guide-booking-card:hover {
+body.kt-dashboard-page #dashboard-app .kt-guide-booking-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 26px rgba(47, 93, 80, 0.12);
   border-color: #9dbfac;
@@ -3274,33 +3265,25 @@ body.kt-dashboard-page #dashboard-app
 
 /* 7. PARTICIPANT FORM CONTROLS */
 
-body.kt-dashboard-page #dashboard-app
-.kt-participant {
+body.kt-dashboard-page #dashboard-app .kt-participant {
   transition: background-color 0.2s ease;
 }
 
-body.kt-dashboard-page #dashboard-app
-.kt-participant:hover {
+body.kt-dashboard-page #dashboard-app .kt-participant:hover {
   background: rgba(237, 244, 239, 0.6);
 }
 
-body.kt-dashboard-page #dashboard-app
-.kt-field input,
-body.kt-dashboard-page #dashboard-app
-.kt-field select,
-body.kt-dashboard-page #dashboard-app
-.kt-field textarea {
+body.kt-dashboard-page #dashboard-app .kt-field input,
+body.kt-dashboard-page #dashboard-app .kt-field select,
+body.kt-dashboard-page #dashboard-app .kt-field textarea {
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
 }
 
-body.kt-dashboard-page #dashboard-app
-.kt-field input:focus,
-body.kt-dashboard-page #dashboard-app
-.kt-field select:focus,
-body.kt-dashboard-page #dashboard-app
-.kt-field textarea:focus {
+body.kt-dashboard-page #dashboard-app .kt-field input:focus,
+body.kt-dashboard-page #dashboard-app .kt-field select:focus,
+body.kt-dashboard-page #dashboard-app .kt-field textarea:focus {
   border-color: #2f5d50;
   box-shadow: 0 0 0 4px rgba(47, 93, 80, 0.1);
 }
@@ -3325,27 +3308,20 @@ body.kt-dashboard-page #dashboard-app
     transition: none !important;
   }
 
-  body.kt-dashboard-page #dashboard-app
-  .btn:hover,
-  body.kt-dashboard-page #dashboard-app
-  .kt-stat:hover,
-  body.kt-dashboard-page #dashboard-app
-  .kt-item:hover,
-  body.kt-dashboard-page #dashboard-app
-  .kt-guide-booking-card:hover,
-  body.kt-dashboard-page #dashboard-app
-  .kt-sidebar nav a:hover {
+  body.kt-dashboard-page #dashboard-app .btn:hover,
+  body.kt-dashboard-page #dashboard-app .kt-stat:hover,
+  body.kt-dashboard-page #dashboard-app .kt-item:hover,
+  body.kt-dashboard-page #dashboard-app .kt-guide-booking-card:hover,
+  body.kt-dashboard-page #dashboard-app .kt-sidebar nav a:hover {
     transform: none !important;
   }
 }
-
 
 /* ==========================================================
    KALINGA TRAILS — MODULE 10 & 11 DESIGN UPGRADE
    Hike Details & Safety + Guide Operations
    CSS ONLY — DO NOT MODIFY APP.JS
    ========================================================== */
-
 
 /* ==========================================================
    01. SHARED ANIMATIONS
@@ -3364,8 +3340,12 @@ body.kt-dashboard-page #dashboard-app
 }
 
 @keyframes ktModuleFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes ktModuleScaleIn {
@@ -3380,7 +3360,6 @@ body.kt-dashboard-page #dashboard-app
   }
 }
 
-
 /* ==========================================================
    MODULE 10 — HIKE DETAILS & SAFETY
    ========================================================== */
@@ -3388,12 +3367,7 @@ body.kt-dashboard-page #dashboard-app
 /* 02. HIKE HERO */
 
 body:has(.kt-hike-details) .kt-hike-hero {
-  background: linear-gradient(
-    120deg,
-    #203b2d 0%,
-    #2f5d50 60%,
-    #486b7a 100%
-  );
+  background: linear-gradient(120deg, #203b2d 0%, #2f5d50 60%, #486b7a 100%);
   color: #ffffff;
   position: relative;
   overflow: hidden;
@@ -3414,7 +3388,6 @@ body:has(.kt-hike-details) .kt-hike-hero {
   animation: ktModuleFadeUp 0.6s ease 0.1s both;
 }
 
-
 /* 03. SECTION HEADING */
 
 .kt-hike-details .kt-section-intro {
@@ -3432,7 +3405,6 @@ body:has(.kt-hike-details) .kt-hike-hero {
   line-height: 1.7;
 }
 
-
 /* 04. HIKE DETAILS GRID */
 
 .kt-hike-details #kt-detail {
@@ -3443,7 +3415,6 @@ body:has(.kt-hike-details) .kt-hike-hero {
   gap: clamp(20px, 3vw, 34px);
   align-items: start;
 }
-
 
 /* 05. MAIN TRAIL INFORMATION CARD */
 
@@ -3465,7 +3436,6 @@ body:has(.kt-hike-details) .kt-hike-hero {
   box-shadow: 0 14px 34px rgba(47, 93, 80, 0.09);
 }
 
-
 /* 06. TRAIL IMAGE */
 
 .kt-hike-details #kt-detail .details-image {
@@ -3486,7 +3456,6 @@ body:has(.kt-hike-details) .kt-hike-hero {
   filter: brightness(1.04);
 }
 
-
 /* 07. TRAIL INFORMATION TYPOGRAPHY */
 
 .kt-hike-details #kt-detail h2 {
@@ -3505,7 +3474,6 @@ body:has(.kt-hike-details) .kt-hike-hero {
   line-height: 1.75;
   overflow-wrap: anywhere;
 }
-
 
 /* 08. TRAIL BADGES */
 
@@ -3527,7 +3495,6 @@ body:has(.kt-hike-details) .kt-hike-hero {
   font-size: 0.78rem;
   font-weight: 700;
 }
-
 
 /* 09. BOOKING SUMMARY PANEL */
 
@@ -3555,7 +3522,6 @@ body:has(.kt-hike-details) .kt-hike-hero {
   font-size: clamp(1.3rem, 2vw, 1.7rem);
   margin-bottom: 14px;
 }
-
 
 /* 10. BOOKING INFORMATION ROWS */
 
@@ -3588,7 +3554,6 @@ body:has(.kt-hike-details) .kt-hike-hero {
   overflow-wrap: anywhere;
 }
 
-
 /* 11. BOOKING BUTTON */
 
 .kt-hike-details #kt-detail .kt-wide {
@@ -3609,7 +3574,9 @@ body:has(.kt-hike-details) .kt-hike-hero {
     background-color 0.2s ease;
 }
 
-.kt-hike-details #kt-detail .btn:hover:not(:disabled):not([aria-disabled="true"]),
+.kt-hike-details
+  #kt-detail
+  .btn:hover:not(:disabled):not([aria-disabled="true"]),
 .kt-hike-hero .btn:hover {
   transform: translateY(-3px);
   box-shadow: 0 9px 20px rgba(47, 93, 80, 0.17);
@@ -3625,7 +3592,6 @@ body:has(.kt-hike-details) .kt-hike-hero {
   cursor: not-allowed;
   pointer-events: none;
 }
-
 
 /* 12. SAFETY INFORMATION CARDS */
 
@@ -3649,7 +3615,6 @@ body:has(.kt-hike-details) .kt-hike-hero {
   box-shadow: 0 10px 24px rgba(47, 93, 80, 0.08);
 }
 
-
 /* 13. EQUIPMENT CHECKLIST */
 
 .kt-hike-details .kt-hike-checklist {
@@ -3664,7 +3629,6 @@ body:has(.kt-hike-details) .kt-hike-hero {
   line-height: 1.6;
   padding-left: 4px;
 }
-
 
 /* 14. MEETING POINT MAP */
 
@@ -3685,7 +3649,6 @@ body:has(.kt-hike-details) .kt-hike-hero {
   margin-top: 14px;
 }
 
-
 /* 15. SAFETY NOTICE */
 
 .kt-hike-details .kt-safety-notice {
@@ -3701,39 +3664,18 @@ body:has(.kt-hike-details) .kt-hike-hero {
   box-shadow: 0 12px 28px rgba(47, 93, 80, 0.12);
 }
 
-
-/* ==========================================================
-   MODULE 11 — GUIDE OPERATIONS
-   ==========================================================
-
-   Guide-specific CSS selector:
-   The existing app.js gives Guide accounts an Assigned
-   Hikes sidebar link that Hiker and Admin accounts
-   do not have.
-
-   Modern browser :has() support is required.
-   ========================================================== */
-
-
 /* 16. GUIDE DASHBOARD HERO */
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) .page-hero {
-  background: linear-gradient(
-    120deg,
-    #203b2d,
-    #2f5d50 60%,
-    #486b7a
-  );
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  .page-hero {
+  background: linear-gradient(120deg, #203b2d, #2f5d50 60%, #486b7a);
 }
-
 
 /* 17. GUIDE MAIN PANEL ANIMATION */
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-panel {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-panel {
   background: rgba(255, 255, 255, 0.97);
   border: 1px solid rgba(47, 93, 80, 0.16);
   border-radius: 21px;
@@ -3741,38 +3683,40 @@ body.kt-dashboard-page:has(
   animation: ktModuleFadeUp 0.45s ease-out both;
 }
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-panel > h2 {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-panel
+  > h2 {
   color: #24483d;
   margin-bottom: 22px;
   letter-spacing: -0.02em;
 }
 
-
 /* 18. GUIDE SIDEBAR */
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-sidebar {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-sidebar {
   background: rgba(255, 255, 255, 0.97);
   border: 1px solid #d7e3d9;
   border-radius: 20px;
   box-shadow: 0 9px 28px rgba(36, 36, 36, 0.06);
 }
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-user strong {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-user
+  strong {
   color: #24483d;
 }
 
-
 /* 19. SIDEBAR LINK ANIMATIONS */
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-sidebar nav a {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-sidebar
+  nav
+  a {
   border-radius: 12px;
   transition:
     transform 0.2s ease,
@@ -3781,28 +3725,31 @@ body.kt-dashboard-page:has(
     box-shadow 0.2s ease;
 }
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-sidebar nav a:hover {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-sidebar
+  nav
+  a:hover {
   transform: translateX(4px);
   background: #edf4ef;
   color: #2f5d50;
 }
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-sidebar nav a.selected {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-sidebar
+  nav
+  a.selected {
   background: #e5eee8;
   color: #24483d;
   box-shadow: inset 4px 0 0 #2f5d50;
 }
 
-
 /* 20. GUIDE STATISTICS */
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-stat {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-stat {
   background: linear-gradient(145deg, #eff6f0, #ffffff);
   border: 1px solid #d4e4d8;
   border-radius: 16px;
@@ -3815,38 +3762,37 @@ body.kt-dashboard-page:has(
     border-color 0.25s ease;
 }
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-stat:hover {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-stat:hover {
   transform: translateY(-5px);
   box-shadow: 0 12px 28px rgba(47, 93, 80, 0.12);
   border-color: #a8c7b3;
 }
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-stat:nth-child(2) {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-stat:nth-child(2) {
   animation-delay: 0.07s;
 }
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-stat:nth-child(3) {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-stat:nth-child(3) {
   animation-delay: 0.14s;
 }
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-stat:nth-child(4) {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-stat:nth-child(4) {
   animation-delay: 0.21s;
 }
 
-
 /* 21. GUIDE BUTTON ANIMATIONS */
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .btn {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .btn {
   min-height: 44px;
   border-radius: 999px;
   transition:
@@ -3856,25 +3802,24 @@ body.kt-dashboard-page:has(
     border-color 0.2s ease;
 }
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .btn:hover:not(:disabled):not([aria-disabled="true"]) {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .btn:hover:not(:disabled):not([aria-disabled="true"]) {
   transform: translateY(-3px);
   box-shadow: 0 9px 20px rgba(47, 93, 80, 0.16);
 }
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .btn:active:not(:disabled) {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .btn:active:not(:disabled) {
   transform: scale(0.97);
 }
 
-
 /* 22. ASSIGNED HIKES AND REPORT ROWS */
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-item {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-item {
   padding: 18px 12px;
   border-bottom: 1px solid #e1e9e2;
   border-radius: 10px;
@@ -3883,33 +3828,33 @@ body.kt-dashboard-page:has(
     transform 0.22s ease;
 }
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-item:hover {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-item:hover {
   background: #f1f7f2;
   transform: translateX(3px);
 }
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-item strong {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-item
+  strong {
   color: #285546;
 }
 
-
 /* 23. GUIDE BOOKING CARDS */
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-guide-booking-list {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-guide-booking-list {
   display: grid;
   gap: 14px;
   margin-top: 20px;
 }
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-guide-booking-card {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-guide-booking-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3926,41 +3871,42 @@ body.kt-dashboard-page:has(
     box-shadow 0.24s ease;
 }
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-guide-booking-card:hover {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-guide-booking-card:hover {
   transform: translateY(-4px);
   border-color: #a2c3ad;
   box-shadow: 0 12px 28px rgba(47, 93, 80, 0.11);
 }
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-guide-booking-info {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-guide-booking-info {
   min-width: 0;
   flex: 1;
 }
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-guide-booking-info h3 {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-guide-booking-info
+  h3 {
   color: #254c3e;
   margin-bottom: 9px;
 }
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-guide-booking-info p {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-guide-booking-info
+  p {
   color: #52645a;
   line-height: 1.6;
 }
 
-
 /* 24. GUIDE BOOKING DETAILS */
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-guide-booking-context {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-guide-booking-context {
   margin: 20px 0;
   padding: clamp(16px, 2.3vw, 24px);
   border-radius: 17px;
@@ -3970,18 +3916,18 @@ body.kt-dashboard-page:has(
   animation: ktModuleFadeIn 0.35s ease both;
 }
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-guide-booking-context h3 {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-guide-booking-context
+  h3 {
   color: #285546;
 }
 
-
 /* 25. GUIDE WORKSPACE NAVIGATION */
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-guide-workspace-nav {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-guide-workspace-nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3992,9 +3938,9 @@ body.kt-dashboard-page:has(
   border-bottom: 1px solid #e0e8e2;
 }
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-guide-back {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-guide-back {
   color: #285546;
   font-weight: 700;
   text-decoration: underline;
@@ -4002,18 +3948,18 @@ body.kt-dashboard-page:has(
   transition: color 0.2s ease;
 }
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-guide-back:hover {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-guide-back:hover {
   color: #193d30;
 }
 
-
 /* 26. PARTICIPANT RECORDS */
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-guide-checkin-form .kt-participant {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-guide-checkin-form
+  .kt-participant {
   display: grid;
   grid-template-columns:
     minmax(120px, 1.1fr)
@@ -4026,34 +3972,35 @@ body.kt-dashboard-page:has(
   transition: background-color 0.2s ease;
 }
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-participant:hover {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-participant:hover {
   background: #f1f7f2;
 }
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-participant > strong {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-participant
+  > strong {
   min-width: 0;
   color: #254c3e;
   overflow-wrap: anywhere;
 }
 
-
 /* 27. ATTENDANCE INPUTS */
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-field input,
-
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-field select,
-
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-field textarea {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-field
+  input,
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-field
+  select,
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-field
+  textarea {
   border: 1px solid #bfcfc4;
   border-radius: 11px;
   background: #ffffff;
@@ -4063,52 +4010,54 @@ body.kt-dashboard-page:has(
     box-shadow 0.2s ease;
 }
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-field input:focus,
-
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-field select:focus,
-
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-field textarea:focus {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-field
+  input:focus,
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-field
+  select:focus,
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-field
+  textarea:focus {
   border-color: #2f5d50;
   outline: 2px solid rgba(47, 93, 80, 0.18);
   outline-offset: 1px;
   box-shadow: 0 0 0 4px rgba(47, 93, 80, 0.09);
 }
 
-
 /* 28. GUIDE NOTES AND INCIDENT REPORTS */
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-guide-checkin-form > .kt-field {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-guide-checkin-form
+  > .kt-field {
   margin-top: 22px;
 }
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-guide-checkin-form textarea {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-guide-checkin-form
+  textarea {
   min-height: 120px;
   line-height: 1.65;
   padding: 13px;
 }
 
-
 /* 29. SAVE AND PAGINATION CONTROLS */
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-guide-checkin-form .kt-actions {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-guide-checkin-form
+  .kt-actions {
   margin-top: 24px;
 }
 
-body.kt-dashboard-page:has(
-  #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-) #dashboard-app .kt-guide-pagination {
+body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+  #dashboard-app
+  .kt-guide-pagination {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
@@ -4117,13 +4066,11 @@ body.kt-dashboard-page:has(
   border-top: 1px solid #e0e8e2;
 }
 
-
 /* ==========================================================
    30. TABLET RESPONSIVENESS
    ========================================================== */
 
 @media (max-width: 900px) {
-
   .kt-hike-details #kt-detail {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -4133,27 +4080,24 @@ body.kt-dashboard-page:has(
     top: auto;
   }
 
-  body.kt-dashboard-page:has(
-    #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-  ) #dashboard-app .kt-dashboard {
+  body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+    #dashboard-app
+    .kt-dashboard {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  body.kt-dashboard-page:has(
-    #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-  ) #dashboard-app .kt-sidebar {
+  body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+    #dashboard-app
+    .kt-sidebar {
     position: static;
   }
-
 }
-
 
 /* ==========================================================
    31. MOBILE RESPONSIVENESS
    ========================================================== */
 
 @media (max-width: 680px) {
-
   /* Hike Details */
 
   .kt-hike-details #kt-detail {
@@ -4182,69 +4126,68 @@ body.kt-dashboard-page:has(
 
   /* Guide Booking Cards */
 
-  body.kt-dashboard-page:has(
-    #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-  ) #dashboard-app .kt-guide-booking-card {
+  body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+    #dashboard-app
+    .kt-guide-booking-card {
     flex-direction: column;
     align-items: stretch;
   }
 
-  body.kt-dashboard-page:has(
-    #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-  ) #dashboard-app .kt-guide-booking-card .btn {
+  body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+    #dashboard-app
+    .kt-guide-booking-card
+    .btn {
     width: 100%;
   }
 
   /* Participant Records */
 
-  body.kt-dashboard-page:has(
-    #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-  ) #dashboard-app .kt-guide-checkin-form .kt-participant {
+  body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+    #dashboard-app
+    .kt-guide-checkin-form
+    .kt-participant {
     grid-template-columns: minmax(0, 1fr);
     gap: 10px;
   }
 
   /* Guide Navigation */
 
-  body.kt-dashboard-page:has(
-    #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-  ) #dashboard-app .kt-guide-workspace-nav {
+  body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+    #dashboard-app
+    .kt-guide-workspace-nav {
     align-items: stretch;
     flex-direction: column;
   }
 
-  body.kt-dashboard-page:has(
-    #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-  ) #dashboard-app .kt-guide-pagination a {
+  body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+    #dashboard-app
+    .kt-guide-pagination
+    a {
     flex: 1 1 140px;
     text-align: center;
   }
-
 }
-
 
 /* ==========================================================
    32. ACCESSIBILITY — REDUCED MOTION
    ========================================================== */
 
 @media (prefers-reduced-motion: reduce) {
-
   .kt-hike-details #kt-detail *,
   .kt-hike-hero *,
-  body.kt-dashboard-page:has(
-    #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-  ) #dashboard-app * {
+  body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+    #dashboard-app
+    * {
     animation: none !important;
     transition: none !important;
   }
 
   .kt-hike-details #kt-detail *:hover,
-  body.kt-dashboard-page:has(
-    #dashboard-app .kt-sidebar a[href*="tab=assigned"]
-  ) #dashboard-app *:hover {
+  body.kt-dashboard-page:has(#dashboard-app .kt-sidebar a[href*="tab=assigned"])
+    #dashboard-app
+    *:hover {
     transform: none !important;
   }
-
 }
 
 /* ===================== END ===================== */
@@ -4262,4 +4205,67 @@ body.kt-dashboard-page:has(
   .booking-policy-panel {
     padding: 20px;
   }
+}
+
+/* Booking price and payment record */
+.kt-starting-price {
+  margin: 0.65rem 0;
+  color: #29584c;
+  font-size: 0.95rem;
+}
+.kt-starting-price strong {
+  font-size: 1.2rem;
+  font-weight: 750;
+}
+.kt-price-preview {
+  margin: 0.75rem 0 0;
+  padding: 0.75rem 1rem;
+  background: #eff6f0;
+  border-left: 3px solid #2f5d50;
+  border-radius: 0.4rem;
+  font-weight: 700;
+}
+.kt-payment-summary {
+  margin: 1.15rem 0;
+  padding: 1rem;
+  background: #f4f7f4;
+  border: 1px solid #d9e6dc;
+  border-radius: 0.8rem;
+}
+.kt-payment-summary h3 {
+  margin: 0 0 0.65rem;
+}
+.kt-payment-summary dl {
+  margin: 0.65rem 0;
+  display: grid;
+  gap: 0.6rem;
+}
+.kt-payment-summary dl > div {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 1rem;
+  border-bottom: 1px solid #d8e2db;
+  padding-bottom: 0.45rem;
+}
+.kt-payment-summary dt {
+  color: #4c625b;
+}
+.kt-payment-summary dd {
+  margin: 0;
+  font-weight: 650;
+}
+.kt-payment-inline {
+  margin: 0.8rem 0 0.3rem;
+  font-size: 0.95rem;
+}
+#kt-payment-reference-form {
+  margin: 1rem 0;
+  display: grid;
+  gap: 0.75rem;
+}
+#kt-payment-reference-form input {
+  width: 100%;
+  max-width: 460px;
 }
